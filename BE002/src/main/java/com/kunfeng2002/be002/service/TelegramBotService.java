@@ -4,6 +4,7 @@ import com.kunfeng2002.be002.Telegram.Bot;
 import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.entity.User;
 import com.kunfeng2002.be002.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.*;
 import static org.web3j.crypto.WalletUtils.isValidAddress;
 
 @Service
+@Slf4j
 public class TelegramBotService {
 
     private final Bot bot;
@@ -33,19 +35,17 @@ public class TelegramBotService {
     @EventListener(ApplicationReadyEvent.class)
     public void startBot() {
         try {
-
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             botsApi.registerBot(bot);
-
+            log.info("Telegram bot started successfully.");
         } catch (TelegramApiException e) {
-            System.err.println("Telegram API Error: " + e.getMessage());
+            log.error("Telegram API Error: {}", e.getMessage());
         } catch (Exception e) {
-            System.err.println("Failed to start Telegram Bot: " + e.getMessage());
+            log.error("Failed to start Telegram Bot: {}", e.getMessage());
         }
     }
 
     public ChatMessageResponse processWebChatMessage(String message, String userAddress, String sessionId) {
-
         String botResponse = generateBotResponse(message);
         boolean sentToTelegram = false;
         String telegramMessageId = null;
@@ -57,7 +57,7 @@ public class TelegramBotService {
                 bot.sendText(telegramUserId, "Bot: " + botResponse);
                 sentToTelegram = true;
                 telegramMessageId = "sent_" + System.currentTimeMillis();
-           } catch (Exception e) {
+            } catch (Exception e) {
                 System.err.println("Failed to send to  Telegram: " + e.getMessage());
             }
         }
@@ -195,5 +195,33 @@ public class TelegramBotService {
         }
 
         return null;
+    }
+
+
+    public Optional<Long> getTelegramIdForAddress(String walletAddress) {
+
+        Long telegramId = userAddressToTelegramId.get(walletAddress.toLowerCase());
+        if (telegramId != null) {
+            return Optional.of(telegramId);
+        }
+
+
+        Optional<User> userOpt = userRepository.findByWalletAddressQuery(walletAddress);
+        if (userOpt.isPresent() && userOpt.get().getTelegramUserId() != null) {
+            Long userId = userOpt.get().getTelegramUserId();
+            userAddressToTelegramId.put(walletAddress.toLowerCase(), userId);
+            return Optional.of(userId);
+        }
+
+        return Optional.empty();
+    }
+
+    public void sendNotification(Long telegramId, String message) {
+        try {
+            bot.sendText(telegramId, message);
+            log.info("Notification sent to Telegram user {}: {}", telegramId, message);
+        } catch (Exception e) {
+            log.error("Failed to send notification to Telegram user {}: {}", telegramId, e.getMessage());
+        }
     }
 }

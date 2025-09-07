@@ -54,6 +54,8 @@ public class Bot extends TelegramLongPollingBot {
         var username = user.getUserName();
         var idTele = user.getId();
 
+        TelegramBotService telegramBotService = applicationContext.getBean(TelegramBotService.class);
+
         if (msg.isCommand()) {
             if(msg.getText().equals("/start")) {
                 sendText(idTele, "Welcome to the bot, " + user.getUserName() + "! \n " +
@@ -71,12 +73,9 @@ public class Bot extends TelegramLongPollingBot {
             return;
         }
 
-        TelegramBotService telegramBotService = applicationContext.getBean(TelegramBotService.class);
-
         String userAddress = telegramBotService.findWalletIdByTelegramId(idTele);
 
         if (userAddress != null) {
-
             telegramBotService.storeTelegramMessage(userAddress, msg.getText(), true);
             String botResponse = generateBotResponse(msg.getText());
             sendText(idTele, botResponse);

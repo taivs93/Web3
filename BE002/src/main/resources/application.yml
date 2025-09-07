@@ -1,29 +1,48 @@
+
 spring:
   application:
     name: web3-backend
-
   datasource:
     url: jdbc:mysql://localhost:3306/web3_db
     username: root
     password:
     driver-class-name: com.mysql.cj.jdbc.Driver
-
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   jpa:
-    show-sql: false
+    show-sql: true
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: false
         dialect: org.hibernate.dialect.MySQL8Dialect
-
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
   kafka:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      batch-size: 16384
+      linger-ms: 5
+      compression-type: snappy
+      acks: 1
     consumer:
       group-id: wallet-notifier
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: latest
+      enable-auto-commit: true
+      max-poll-records: 500
+  cache:
+    type: simple
 
 server:
   port: 8080
@@ -32,10 +51,11 @@ server:
 
 logging:
   level:
-    com.kunfeng2002.be002: DEBUG
-    org.springframework.web: DEBUG
+    com.kunfeng2002.be002: INFO
+    org.springframework.web: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.cache: DEBUG
 
 web3j:
   client-address: http://localhost:8545
@@ -48,15 +68,24 @@ telegram:
 
 network:
   ethereum:
-    rpc-url: https://mainnet.infura.io/v3/0b90cdfb635e4e35a7c28e11b7a83322
+    rpc-url: wss://sepolia.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
+    chain-id: 11155111
   bsc:
-    rpc-url: https://data-seed-prebsc-1-s1.binance.org:8545
-  polygon:
-    rpc-url: https://polygon-rpc.com/
+    rpc-url: https://data-seed-prebsc-1-s1.binance.org:8545/
+    chain-id: 97
   arbitrum:
-    rpc-url: https://arb1.arbitrum.io/rpc
+    rpc-url: wss://arbitrum-sepolia.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
+    chain-id: 421614
   optimism:
-    rpc-url: https://mainnet.optimism.io/
+    rpc-url: wss://optimism-sepolia.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
+    chain-id: 420
   avalanche:
-    rpc-url: https://api.avax.network/ext/bc/C/rpc
+    rpc-url: https://api.avax-test.network/ext/bc/C/rpc
+    chain-id: 43113
 
+app:
+  cache:
+    refresh-interval: 300000
+  blockchain:
+    reconnect-delay: 5000
+    max-retry-attempts: 3
