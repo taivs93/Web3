@@ -3,13 +3,15 @@ package com.kunfeng2002.be002.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kunfeng2002.be002.dto.request.WalletActivityEvent;
+import com.kunfeng2002.be002.entity.FollowedAddress;
+import com.kunfeng2002.be002.repository.FollowedAddressRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -18,7 +20,7 @@ import java.util.Set;
 public class WalletActivityConsumer {
 
     private final TelegramBotService telegramBotService;
-    private final FollowService followService;
+    private final FollowedAddressRepository followedAddressRepository;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "wallet-activity", groupId = "wallet-notifier")
@@ -26,27 +28,26 @@ public class WalletActivityConsumer {
         log.info("Received wallet activity: {}", message);
         try {
             WalletActivityEvent event = objectMapper.readValue(message, WalletActivityEvent.class);
-            Set<Long> notifiedTelegramIds = new HashSet<>();
-
-            String network = event.getNetwork().toUpperCase();
             String fromAddress = event.getFromAddress();
             String toAddress = event.getToAddress();
-            String transactionHash = event.getTransactionHash();
-            if (followService.isAddressFollowed(fromAddress, network)) {
-                Optional<Long> telegramIdOpt = telegramBotService.getTelegramIdForAddress(fromAddress);
-                telegramIdOpt.ifPresent(telegramId -> {
-                    notifiedTelegramIds.add(telegramId);
-                    telegramBotService.sendNotification(telegramId, buildNotificationMessage(event, "sent a transaction"));
-                });
-            }
 
-            if (followService.isAddressFollowed(toAddress, network)) {
-                Optional<Long> telegramIdOpt = telegramBotService.getTelegramIdForAddress(toAddress);
-                telegramIdOpt.ifPresent(telegramId -> {
-                    if (!notifiedTelegramIds.contains(telegramId)) {
-                        telegramBotService.sendNotification(telegramId, buildNotificationMessage(event, "received a transaction"));
+            List<FollowedAddress> followers = followedAddressRepository.findByWalletAddressIn(fromAddress.toLowerCase(), toAddress.toLowerCase());
+
+            Set<Long> notifiedTelegramIds = new HashSet<>();
+
+            for (FollowedAddress fa : followers) {
+                Long telegramId = fa.getBot().getTelegramId();
+
+                if (notifiedTelegramIds.add(telegramId)) {
+                    String notificationMessage;
+
+                    if (fa.getWallet().getAddress().equalsIgnoreCase(fromAddress)) {
+                        notificationMessage = buildNotificationMessage(event, "đã gửi một giao dịch");
+                    } else {
+                        notificationMessage = buildNotificationMessage(event, "đã nhận một giao dịch");
                     }
-                });
+                    telegramBotService.notifyUser(telegramId, notificationMessage);
+                }
             }
 
         } catch (JsonProcessingException e) {
@@ -58,14 +59,15 @@ public class WalletActivityConsumer {
 
     private String buildNotificationMessage(WalletActivityEvent event, String action) {
         return String.format(
+                "Wallet activity \n" +
                         "Network: %s\n" +
-                        "Address: %s\n" +
-                        "Action: %s\n" +
-                                "Value: %s\n" +
-                        "Transaction Hash: %s",
+                        "From: %s\n" +
+                        "To: %s\n" +
+                        "Value: %s\n" +
+                        "Hash: %s",
                 event.getNetwork().toUpperCase(),
                 event.getFromAddress(),
-                action,
+                event.getToAddress(),
                 event.getValue(),
                 event.getTransactionHash()
         );

@@ -58,7 +58,7 @@ public class Web3Config {
     private Web3j createWeb3jClient(String rpcUrl, String networkName) {
         try {
             Web3j web3j;
-            if (rpcUrl.startsWith("wss://") || rpcUrl.startsWith("ws://")) {
+            if (rpcUrl.startsWith("wss://")) {
                 WebSocketService webSocketService = new WebSocketService(new WebSocketClient(new URI(rpcUrl)), true);
                 webSocketService.connect();
                 web3j = Web3j.build(webSocketService);

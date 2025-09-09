@@ -6,7 +6,5 @@ import lombok.Setter;
 @Getter
 public class ChatMessageRequest {
     private String message;
-    private String userAddress;
-    private String chatId;
-
+    private String walletAddress;
 }

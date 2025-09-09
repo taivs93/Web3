@@ -23,8 +23,8 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "wallet_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "wallet_id", nullable = false, unique = true)
     private Wallet wallet;
 
     @Column(name = "username", unique = true, length = 100)
@@ -35,6 +35,12 @@ public class User {
 
     @Column(name = "telegram_user_id")
     private Long telegramUserId;
+
+    @Column(name = "telegram_linking_code", unique = true, length = 50)
+    private String telegramLinkingCode;
+
+    @Column(name = "telegram_linking_code_expires_at")
+    private LocalDateTime telegramLinkingCodeExpiresAt;
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
