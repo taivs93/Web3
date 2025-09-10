@@ -3,13 +3,14 @@ package com.kunfeng2002.be002.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kunfeng2002.be002.dto.request.WalletActivityEvent;
-import com.kunfeng2002.be002.entity.FollowedAddress;
-import com.kunfeng2002.be002.repository.FollowedAddressRepository;
+import com.kunfeng2002.be002.entity.Follow;
+import com.kunfeng2002.be002.repository.FollowRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,7 +21,7 @@ import java.util.Set;
 public class WalletActivityConsumer {
 
     private final TelegramBotService telegramBotService;
-    private final FollowedAddressRepository followedAddressRepository;
+    private final FollowRepository followRepository;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "wallet-activity", groupId = "wallet-notifier")
@@ -31,25 +32,29 @@ public class WalletActivityConsumer {
             String fromAddress = event.getFromAddress();
             String toAddress = event.getToAddress();
 
-            List<FollowedAddress> followers = followedAddressRepository.findByWalletAddressIn(fromAddress.toLowerCase(), toAddress.toLowerCase());
+            List<String> addresses = new ArrayList<>();
+            if (fromAddress != null) addresses.add(fromAddress);
+            if (toAddress != null) addresses.add(toAddress);
 
-            Set<Long> notifiedTelegramIds = new HashSet<>();
+            List<Follow> followers = followRepository.findByWalletAddresses(addresses);
 
-            for (FollowedAddress fa : followers) {
-                Long telegramId = fa.getBot().getTelegramId();
+            Set<Long> notifiedChatIds = new HashSet<>();
+            String fromAction = "Send a transaction";
+            String toAction = "Receive a transaction";
 
-                if (notifiedTelegramIds.add(telegramId)) {
+            for (Follow follow : followers) {
+                Long chatId = follow.getChat().getChatId();
+
+                if (notifiedChatIds.add(chatId)) {
                     String notificationMessage;
-
-                    if (fa.getWallet().getAddress().equalsIgnoreCase(fromAddress)) {
-                        notificationMessage = buildNotificationMessage(event, "đã gửi một giao dịch");
+                    if (follow.getWallet().getAddress().equalsIgnoreCase(fromAddress)) {
+                        notificationMessage = buildNotificationMessage(event, fromAction);
                     } else {
-                        notificationMessage = buildNotificationMessage(event, "đã nhận một giao dịch");
+                        notificationMessage = buildNotificationMessage(event, toAction);
                     }
-                    telegramBotService.notifyUser(telegramId, notificationMessage);
+                    telegramBotService.notifyUser(chatId, notificationMessage);
                 }
             }
-
         } catch (JsonProcessingException e) {
             log.error("Failed to parse wallet activity event from Kafka message: {}", message, e);
         } catch (Exception e) {

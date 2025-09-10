@@ -2,20 +2,17 @@ package com.kunfeng2002.be002.Telegram;
 
 import com.kunfeng2002.be002.event.TelegramMessageEvent;
 import com.kunfeng2002.be002.service.TelegramBotService;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.BiConsumer;
 
 @Component
 @Slf4j
@@ -25,22 +22,12 @@ public class Bot extends TelegramLongPollingBot {
     private final String botToken;
     private final TelegramBotService telegramBotService;
 
-    private final Map<String, BiConsumer<Long, String>> commandHandlers = new HashMap<>();
-
     public Bot(@Value("${telegram.bot.username}") String botUsername,
                @Value("${telegram.bot.token}") String botToken,
                TelegramBotService telegramBotService) {
         this.botUsername = botUsername;
         this.botToken = botToken;
         this.telegramBotService = telegramBotService;
-    }
-
-    @PostConstruct
-    public void init() {
-        commandHandlers.put("/start", (telegramId, arg) -> handleStartCommand(telegramId));
-        commandHandlers.put("/follow", this::handleFollowCommand);
-        commandHandlers.put("/link", this::handleLinkCommand);
-        log.info("Bot init");
     }
 
     @Override
@@ -55,75 +42,127 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        log.info(String.valueOf(update.getMessage()));
-        Message msg = update.getMessage();
-        Long telegramId = msg.getFrom().getId();
-        String text = msg.getText().trim();
+        if (!update.hasMessage() || !update.getMessage().hasText()) return;
 
-        log.info("Received message from {}: {}", telegramId, text);
+        Message message = update.getMessage();
+        Chat chat = message.getChat();
+        User user = message.getFrom();
+        String text = message.getText().trim();
 
+        log.info("Received message from user {} in chat {}: {}",
+                user.getId(), chat.getId(), text);
+
+        MessageContext context = new MessageContext(
+                user.getId(),
+                chat.getId(),
+                chat.getType(),
+                user.getFirstName()
+        );
+
+        if (isPrivateChat(chat)) {
+            processPrivateMessage(context, text);
+        } else if (isGroupChat(chat)) {
+            processGroupMessage(context, text, message);
+        }
+    }
+
+    private void processPrivateMessage(MessageContext context, String text) {
+        log.info("Processing private message from user {}", context.userId);
+        executeCommand(context, text, context.firstName);
+    }
+
+    private void processGroupMessage(MessageContext context, String text, Message message) {
+        log.info("Processing group message from user {} in chat {}", context.userId, context.chatId);
+        if (isBotMentioned(text) || isReplyToBot(message) || text.startsWith("/")) {
+            String cleanText = text.replace("@" + botUsername, "").trim();
+            executeCommand(context, cleanText, message.getChat().getTitle());
+        }
+    }
+
+    private void executeCommand(MessageContext context, String text, String chatTitle) {
         String[] parts = text.split(" ", 2);
-        String command = parts[0];
+        String command = parts[0].toLowerCase();
         String argument = parts.length > 1 ? parts[1] : "";
 
-        if (commandHandlers.containsKey(command)) {
-            commandHandlers.get(command).accept(telegramId, argument);
-        } else {
-            sendText(telegramId, "Invalid command. Please use /start, /follow <wallet_address>, or /link <linking_code>.");
-        }
-
-    }
-
-    private void handleStartCommand(Long telegramId) {
+        String response;
         try {
-            telegramBotService.startBot(telegramId);
-            sendText(telegramId, "Welcome to the bot! Use /follow <wallet_address> to start following a wallet or /link <linking_code> to connect your web account.");
+            switch (command) {
+                case "/start":
+                    telegramBotService.startBot(context.userId, context.chatId, context.chatType, chatTitle);
+                    response = isPrivateChat(context.chatType)
+                            ? String.format("Welcome %s!\n\nAvailable commands:\n/follow <wallet_address>\n/unfollow <wallet_address>\n/link <linking_code>\n/help", context.firstName)
+                            : String.format("Bot is now active in this group. Mention me with @%s /help to see available commands.", botUsername);
+                    break;
+                case "/follow":
+                    response = (argument.isEmpty() || !isValidAddress(argument))
+                            ? "Invalid wallet address format. Use: /follow <wallet_address>"
+                            : telegramBotService.followWallet(context.chatId, argument);
+                    break;
+                case "/unfollow":
+                    response = (argument.isEmpty() || !isValidAddress(argument))
+                            ? "Invalid wallet address format. Use: /unfollow <wallet_address>"
+                            : telegramBotService.unfollowWallet(context.chatId, argument);
+                    break;
+                case "/link":
+                    response = !isPrivateChat(context.chatType)
+                            ? "Use /link in private chat only."
+                            : argument.isEmpty()
+                            ? "Please provide a linking code. Use: /link <linking_code>"
+                            : telegramBotService.linkUserToTelegram(context.userId, argument);
+                    break;
+                case "/help":
+                    response = isPrivateChat(context.chatType)
+                            ? "Available commands:\n/start\n/follow <wallet_address>\n/unfollow <wallet_address>\n/link <linking_code>\n/help"
+                            : String.format("Group commands:\n@%s /follow <wallet_address>\n@%s /unfollow <wallet_address>\n@%s /help", botUsername, botUsername, botUsername);
+                    break;
+                default:
+                    if (isPrivateChat(context.chatType)) {
+                        response = "Unknown command. Type /help for available commands.";
+                    } else return;
+                    break;
+            }
+            sendText(context.chatId, response);
         } catch (Exception e) {
-            log.error("Failed to handle /start command for telegramId {}", telegramId, e);
-            sendText(telegramId, "Failed to connect bot.");
-        }
-    }
-
-    private void handleFollowCommand(Long telegramId, String walletAddress) {
-        if (walletAddress.isEmpty() || !isValidAddress(walletAddress)) {
-            sendText(telegramId, "Invalid wallet address format. Please use /follow <wallet_address>.");
-            return;
-        }
-
-        try {
-            telegramBotService.followWallet(telegramId, walletAddress);
-        } catch (Exception e) {
-            log.error("Failed to follow wallet {} for telegramId {}", walletAddress, telegramId, e);
-            sendText(telegramId, "Failed to follow wallet. Try again later.");
-        }
-    }
-
-    private void handleLinkCommand(Long telegramId, String linkingCode) {
-        if (linkingCode.isEmpty()) {
-            sendText(telegramId, "Please provide a linking code. Use /link <linking_code>.");
-            return;
-        }
-
-        try {
-            telegramBotService.linkUserToTelegram(telegramId, linkingCode);
-            sendText(telegramId, "Your Telegram account has been successfully linked!");
-        } catch (Exception e) {
-            log.error("Failed to link user {} with code {}", telegramId, linkingCode, e);
-            sendText(telegramId, "Failed to link account. The linking code may be invalid or expired.");
+            log.error("Error executing command {} for user {}", command, context.userId, e);
+            sendText(context.chatId, "An error occurred while processing your request.");
         }
     }
 
     @EventListener
-    public void onTelegramMessage(TelegramMessageEvent event) {
+    public void onTelegramMessageEvent(TelegramMessageEvent event) {
         sendText(event.chatId(), event.message());
     }
 
     public void sendText(Long chatId, String text) {
         try {
-            execute(SendMessage.builder().chatId(chatId.toString()).text(text).build());
+            execute(SendMessage.builder()
+                    .chatId(chatId.toString())
+                    .text(text)
+                    .build());
         } catch (TelegramApiException e) {
             log.error("Failed to send message to {}: {}", chatId, e.getMessage(), e);
         }
+    }
+
+    private boolean isPrivateChat(String chatType) {
+        return "private".equals(chatType);
+    }
+
+    private boolean isPrivateChat(Chat chat) {
+        return isPrivateChat(chat.getType());
+    }
+
+    private boolean isGroupChat(Chat chat) {
+        return "group".equals(chat.getType()) || "supergroup".equals(chat.getType());
+    }
+
+    private boolean isBotMentioned(String text) {
+        return text.contains("@" + botUsername);
+    }
+
+    private boolean isReplyToBot(Message message) {
+        return message.getReplyToMessage() != null &&
+                message.getReplyToMessage().getFrom().getUserName().equals(botUsername);
     }
 
     private boolean isValidAddress(String address) {

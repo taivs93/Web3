@@ -66,8 +66,8 @@ web3j:
 
 telegram:
   bot:
-    username: buildweb3_bot
-    token: 8431553398:AAFZkRvL-DJPQboQplPnQVXNOYaoKZa4pxE
+    username: taiteasicale_bot
+    token: 8493544022:AAEL-OiS659ZDo6z8I4OPSi6uOHzG1OK9PY
 
 network:
   ethereum:

@@ -7,16 +7,24 @@ import io.reactivex.disposables.Disposable;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.methods.response.EthBlock;
-import org.web3j.protocol.core.methods.response.Transaction;
-
+import org.web3j.protocol.core.methods.response.EthBlockNumber;
+import org.web3j.protocol.core.methods.response.EthBlock.TransactionObject;
+import java.math.BigInteger;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @Slf4j
@@ -28,6 +36,15 @@ public class BlockchainListener {
     private final FollowService followService;
     private final Map<String, Integer> retryCounts = new ConcurrentHashMap<>();
     private final Map<String, Disposable> subscriptions = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    private final Map<String, AtomicReference<BigInteger>> lastProcessedBlocks = new ConcurrentHashMap<>();
+
+    @Value("${app.blockchain.max-retry-attempts:3}")
+    private int maxRetryAttempts;
+
+    @Value("${app.blockchain.reconnect-delay:5000}")
+    private long reconnectDelay;
 
     public BlockchainListener(
             KafkaTemplate<String, String> kafkaTemplate,
@@ -50,6 +67,8 @@ public class BlockchainListener {
                 "OPTIMISM", optimismWeb3,
                 "AVALANCHE", avalancheWeb3
         );
+
+        web3Clients.keySet().forEach(network -> lastProcessedBlocks.put(network, new AtomicReference<>(BigInteger.ZERO)));
     }
 
     @PostConstruct
@@ -64,9 +83,15 @@ public class BlockchainListener {
             oldSub.dispose();
         }
 
-        Disposable subscription = web3.blockFlowable(false)
+        Disposable subscription = web3.blockFlowable(true)
                 .subscribe(
-                        block -> processBlock(network, block),
+                        block -> {
+                            processBlock(network, block);
+                            if (block.getBlock() != null) {
+                                lastProcessedBlocks.get(network)
+                                        .set(block.getBlock().getNumber());
+                            }
+                        },
                         error -> {
                             log.error("Error while listening to {} blockchain", network, error);
                             restartListener(network, web3);
@@ -77,26 +102,49 @@ public class BlockchainListener {
     }
 
     private void restartListener(String network, Web3j web3) {
-        int maxRetries = 5;
         int currentRetry = retryCounts.computeIfAbsent(network, k -> 0);
 
-        if (currentRetry >= maxRetries) {
-            log.error("Failed to restart listener for {} after {} retries. Giving up.", network, maxRetries);
+        if (currentRetry >= maxRetryAttempts) {
+            log.error("Failed to restart listener for {} after {} retries. Giving up.", network, maxRetryAttempts);
             return;
         }
 
-        long delay = (long) (Math.pow(2, currentRetry) * 1000);
+        long delay = reconnectDelay * (long) (Math.pow(2, currentRetry));
         retryCounts.put(network, currentRetry + 1);
 
+        log.warn("Attempting to restart listener for {} in {}ms. Retry count: {}", network, delay, currentRetry + 1);
+
+        scheduler.schedule(() -> {
+            try {
+                catchUpBlocks(network, web3);
+                startListener(network, web3);
+                log.info("Restarted blockchain listener for network: {}", network);
+                retryCounts.put(network, 0);
+            } catch (Exception e) {
+                log.error("Failed to restart listener for {}", network, e);
+                restartListener(network, web3);
+            }
+        }, delay, TimeUnit.MILLISECONDS);
+    }
+
+    private void catchUpBlocks(String network, Web3j web3) {
         try {
-            log.warn("Attempting to restart listener for {} in {}ms. Retry count: {}", network, delay, currentRetry + 1);
-            Thread.sleep(delay);
-            startListener(network, web3);
-            log.info("Restarted blockchain listener for network: {}", network);
-            retryCounts.put(network, 0);
-        } catch (InterruptedException e) {
-            log.error("Failed to restart listener for {}", network, e);
-            Thread.currentThread().interrupt();
+            BigInteger lastBlock = lastProcessedBlocks.get(network).get();
+            EthBlockNumber currentBlockResp = web3.ethBlockNumber().send();
+            BigInteger currentBlock = currentBlockResp.getBlockNumber();
+
+            if (currentBlock.compareTo(lastBlock) > 0) {
+                log.info("Catching up {} from block {} to {}", network, lastBlock.add(BigInteger.ONE), currentBlock);
+                for (BigInteger i = lastBlock.add(BigInteger.ONE); i.compareTo(currentBlock) <= 0; i = i.add(BigInteger.ONE)) {
+                    EthBlock block = web3.ethGetBlockByNumber(new DefaultBlockParameterNumber(i), true).send();
+                    processBlock(network, block);
+                    lastProcessedBlocks.get(network).set(i);
+                }
+            } else {
+                log.info("No missed blocks for network {}", network);
+            }
+        } catch (Exception e) {
+            log.error("Failed to catch up blocks for network {}", network, e);
         }
     }
 
@@ -107,43 +155,22 @@ public class BlockchainListener {
         ethBlock.getBlock().getTransactions().forEach(transactionResult -> {
             try {
                 Object rawTransaction = transactionResult.get();
-                Transaction transaction = null;
-                if (rawTransaction instanceof Transaction) {
-                    transaction = (Transaction) rawTransaction;
-                } else if (rawTransaction instanceof String) {
-                    String transactionHash = (String) rawTransaction;
-                    try {
-                        transaction = web3Clients.get(network)
-                                .ethGetTransactionByHash(transactionHash)
-                                .send()
-                                .getTransaction()
-                                .orElse(null);
-                    } catch (Exception apiException) {
-                        log.error("Failed to get transaction details for hash {} on network {}", transactionHash, network, apiException);
-                        return;
-                    }
-
-                    if (transaction == null) {
-                        log.warn("Transaction with hash {} not found on network {}", transactionHash, network);
-                        return;
-                    }
-                } else {
-                    log.warn("Unexpected transaction result type: {}", rawTransaction.getClass().getName());
-                    return;
-                }
-                checkAndPublish(network, transaction);
+                if (rawTransaction instanceof TransactionObject) {
+                    TransactionObject transaction = (TransactionObject) rawTransaction;
+                    checkAndPublish(network, transaction);
+                } else log.warn("Wrong transaction type");
             } catch (Exception e) {
                 log.error("Error processing transaction in block {}", ethBlock.getBlock().getNumber(), e);
             }
         });
     }
 
-    private void checkAndPublish(String network, Transaction transaction) {
-
+    private void checkAndPublish(String network, TransactionObject transaction) {
         String from = transaction.getFrom() != null ? transaction.getFrom().toLowerCase() : null;
         String to = transaction.getTo() != null ? transaction.getTo().toLowerCase() : null;
-        List<String> followedAddresses = followService.getGloballyFollowedAddresses();
-        if (followedAddresses == null || followedAddresses.isEmpty()) {
+        List<String> listAddresses = followService.getGloballyFollowedAddresses();
+        Set<String> followedAddresses = new HashSet<>(listAddresses);
+        if (followedAddresses.isEmpty()) {
             return;
         }
 
@@ -159,7 +186,6 @@ public class BlockchainListener {
                     transaction.getValue() != null ? transaction.getValue().toString() : "0",
                     System.currentTimeMillis()
             );
-            log.info("Receive block");
 
             try {
                 kafkaTemplate.send(
@@ -167,7 +193,7 @@ public class BlockchainListener {
                         transaction.getHash(),
                         objectMapper.writeValueAsString(event)
                 );
-                log.debug("Published wallet activity for transaction {} on network {}", transaction.getHash(), network);
+                log.info("Published wallet activity for transaction {} on network {}", transaction.getHash(), network);
             } catch (JsonProcessingException e) {
                 log.error("Failed to serialize WalletActivityEvent for transaction {}", transaction.getHash(), e);
             }

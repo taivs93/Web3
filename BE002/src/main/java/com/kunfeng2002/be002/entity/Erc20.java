@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "ERC20")
+@Table(name = "erc20")
 @Getter
 @Setter
 @NoArgsConstructor
