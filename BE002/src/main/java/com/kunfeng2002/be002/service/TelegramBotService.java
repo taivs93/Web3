@@ -53,7 +53,7 @@ public class TelegramBotService {
 
     @Transactional
     public String followWallet(Long chatId, String walletAddress) {
-        if (chatRepository.existsById(chatId)) throw new DataNotFoundException("Chat not found");
+        if (!chatRepository.existsById(chatId)) throw new DataNotFoundException("Chat not found");
         followService.follow(chatId, walletAddress);
         return "You are now following: " + walletAddress;
     }

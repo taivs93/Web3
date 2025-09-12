@@ -10,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -63,18 +66,24 @@ public class WalletActivityConsumer {
     }
 
     private String buildNotificationMessage(WalletActivityEvent event, String action) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                .withZone(ZoneId.of("Asia/Ho_Chi_Minh"));
+        String formattedTime = formatter.format(Instant.ofEpochMilli(event.getTimestamp()));
         return String.format(
                 "Wallet activity \n" +
                         "Network: %s\n" +
                         "From: %s\n" +
                         "To: %s\n" +
                         "Value: %s\n" +
-                        "Hash: %s",
+                        "Hash: %s\n"
+                    +   "Timestamp: %s"
+                ,
                 event.getNetwork().toUpperCase(),
                 event.getFromAddress(),
                 event.getToAddress(),
                 event.getValue(),
-                event.getTransactionHash()
+                event.getTransactionHash(),
+                formattedTime
         );
     }
 }

@@ -72,19 +72,14 @@ telegram:
 network:
   ethereum:
     rpc-url: wss://sepolia.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
-    chain-id: 11155111
   bsc:
-    rpc-url: wss://bnb-testnet.g.alchemy.com/v2/ForYQ73woh7kVCK4_Z5RY
-    chain-id: 97
+    rpc-url: wss://bnb-mainnet.g.alchemy.com/v2/ForYQ73woh7kVCK4_Z5RY
   arbitrum:
     rpc-url: wss://arbitrum-sepolia.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
-    chain-id: 421614
   optimism:
     rpc-url: wss://optimism-sepolia.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
-    chain-id: 420
   avalanche:
     rpc-url: https://api.avax-test.network/ext/bc/C/rpc
-    chain-id: 43113
 
 app:
   cache:

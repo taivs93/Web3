@@ -1,16 +1,20 @@
 package com.kunfeng2002.be002.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.kunfeng2002.be002.entity.NetworkType;
+import lombok.*;
 
-@Data
-@NoArgsConstructor
+import java.math.BigInteger;
+
+@Getter
 @AllArgsConstructor
-@Builder
 public class WalletActivityEvent {
+
+    @JsonProperty("chain_id")
+    private Long chainId;
+
+    @JsonProperty("network")
+    private NetworkType network;
 
     @JsonProperty("transaction_hash")
     private String transactionHash;
@@ -21,11 +25,8 @@ public class WalletActivityEvent {
     @JsonProperty("to_address")
     private String toAddress;
 
-    @JsonProperty("network")
-    private String network;
-
     @JsonProperty("value")
-    private String value;
+    private BigInteger value;
 
     @JsonProperty("timestamp")
     private Long timestamp;
@@ -34,19 +35,17 @@ public class WalletActivityEvent {
     private String blockNumber;
 
     @JsonProperty("gas_price")
-    private String gasPrice;
+    private BigInteger gasPrice;
 
     @JsonProperty("gas_used")
-    private String gasUsed;
+    private BigInteger gasUsed;
 
+    @JsonProperty("gas_limit")
+    private BigInteger gasLimit;
 
-    public WalletActivityEvent(String transactionHash, String fromAddress, String toAddress,
-                               String network, String value, Long timestamp) {
-        this.transactionHash = transactionHash;
-        this.fromAddress = fromAddress;
-        this.toAddress = toAddress;
-        this.network = network;
-        this.value = value;
-        this.timestamp = timestamp;
-    }
+    @JsonProperty("l1_fee")
+    private BigInteger l1Fee;
+
+    @JsonProperty("status")
+    private Boolean status;
 }
