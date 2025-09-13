@@ -7,7 +7,10 @@ import lombok.*;
 import java.math.BigInteger;
 
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class WalletActivityEvent {
 
     @JsonProperty("chain_id")
@@ -48,4 +51,9 @@ public class WalletActivityEvent {
 
     @JsonProperty("status")
     private Boolean status;
+
+    public String getNetworkAsString() {
+        return network != null ? network.name() : "UNKNOWN";
+    }
 }
+

@@ -1,5 +1,8 @@
 package com.kunfeng2002.be002.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum NetworkType {
     ETHEREUM(NetworkCategory.EVM),
     BSC(NetworkCategory.EVM),
@@ -15,5 +18,14 @@ public enum NetworkType {
 
     public NetworkCategory getCategory() {
         return category;
+    }
+    @JsonCreator
+    public static NetworkType fromString(String value) {
+        return value == null ? null : NetworkType.valueOf(value.toUpperCase());
+    }
+
+    @JsonValue
+    public String toJson() {
+        return this.name();
     }
 }

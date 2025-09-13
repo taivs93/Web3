@@ -3,6 +3,7 @@ package com.kunfeng2002.be002.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kunfeng2002.be002.dto.request.WalletActivityEvent;
+import com.kunfeng2002.be002.entity.NetworkType;
 import io.reactivex.disposables.Disposable;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -168,6 +169,7 @@ public class BlockchainListener {
     private void checkAndPublish(String network, TransactionObject transaction) {
         String from = transaction.getFrom() != null ? transaction.getFrom().toLowerCase() : null;
         String to = transaction.getTo() != null ? transaction.getTo().toLowerCase() : null;
+
         List<String> listAddresses = followService.getGloballyFollowedAddresses();
         Set<String> followedAddresses = new HashSet<>(listAddresses);
         if (followedAddresses.isEmpty()) {
@@ -178,14 +180,16 @@ public class BlockchainListener {
         boolean toFollowed = to != null && followedAddresses.contains(to);
 
         if (fromFollowed || toFollowed) {
-            WalletActivityEvent event = new WalletActivityEvent(
-                    transaction.getHash(),
-                    transaction.getFrom(),
-                    transaction.getTo(),
-                    network,
-                    transaction.getValue() != null ? transaction.getValue().toString() : "0",
-                    System.currentTimeMillis()
-            );
+            WalletActivityEvent event = WalletActivityEvent.builder()
+                    .network(NetworkType.valueOf(network.toUpperCase()))
+                    .transactionHash(transaction.getHash())
+                    .fromAddress(transaction.getFrom())
+                    .toAddress(transaction.getTo())
+                    .value(transaction.getValue() != null ? transaction.getValue() : BigInteger.ZERO)
+                    .blockNumber(transaction.getBlockNumberRaw())
+                    .gasPrice(transaction.getGasPrice())
+                    .timestamp(System.currentTimeMillis())
+                    .build();
 
             try {
                 kafkaTemplate.send(
@@ -199,4 +203,6 @@ public class BlockchainListener {
             }
         }
     }
+
+
 }
