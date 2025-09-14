@@ -79,7 +79,7 @@ export const chatAPI = {
 export const websocketAPI = {
   // WebSocket endpoint
   getWebSocketUrl: () => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
     const host = window.location.hostname
     const port = '8080'
     return `${protocol}//${host}:${port}/api/ws`

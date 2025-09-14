@@ -153,6 +153,7 @@ const notifications = ref([])
 const hasNewNotifications = ref(false)
 const stompClient = ref(null)
 const isConnected = ref(false)
+const expandedNotification = ref(null)
 
 // Computed properties
 const unreadCount = computed(() => {
@@ -162,7 +163,9 @@ const unreadCount = computed(() => {
 // WebSocket connection
 const connectWebSocket = () => {
   try {
-    const socket = new SockJS(websocketAPI.getWebSocketUrl())
+    const wsUrl = websocketAPI.getWebSocketUrl()
+    console.log('Connecting to WebSocket:', wsUrl)
+    const socket = new SockJS(wsUrl)
     stompClient.value = Stomp.over(socket)
     
     stompClient.value.connect({}, (frame) => {
@@ -172,11 +175,17 @@ const connectWebSocket = () => {
       // Subscribe to wallet activity notifications
       stompClient.value.subscribe('/topic/wallet-activity', (message) => {
         const data = JSON.parse(message.body)
+        console.log('Received notification data:', data)
+        
+        const fromAddress = data.fromAddress || data.from_address || 'Unknown'
+        const toAddress = data.toAddress || data.to_address || 'Unknown'
+        const network = data.network || data.networkAsString || 'Unknown'
+        
         addNotification({
           id: Date.now() + Math.random(),
           type: 'wallet',
           title: 'Hoạt động ví mới',
-          message: `Có giao dịch mới từ địa chỉ ${data.fromAddress?.substring(0, 6)}...`,
+          message: `Có giao dịch mới từ ${fromAddress.substring(0, 6)}... đến ${toAddress.substring(0, 6)}... trên ${network}`,
           timestamp: new Date(),
           read: false,
           data: data
