@@ -21,7 +21,7 @@ public class UserDto {
     private String bio;
 
     @JsonProperty("is_active")
-    private Boolean isActive;
+    private Integer isActive;
 
     @JsonProperty("last_login_at")
     private LocalDateTime lastLoginAt;

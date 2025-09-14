@@ -151,7 +151,7 @@
         <!-- User Stats -->
         <div class="bg-white shadow rounded-lg p-6">
           <h2 class="text-lg font-semibold text-gray-900 mb-4">Thống kê đơn giản</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="text-center p-4 bg-indigo-50 rounded-lg">
               <div class="text-2xl font-bold text-indigo-600">{{ authStore.user?.id || 'N/A' }}</div>
               <div class="text-sm text-gray-600">User ID</div>
@@ -163,8 +163,16 @@
               <div class="text-sm text-gray-600">Lần đăng nhập cuối</div>
             </div>
             <div class="text-center p-4 bg-purple-50 rounded-lg">
-              <div class="text-2xl font-bold text-purple-600">Hoạt động</div>
+              <div class="text-2xl font-bold text-purple-600">
+                {{ authStore.user?.isActive ? 'Hoạt động' : 'Không hoạt động' }}
+              </div>
               <div class="text-sm text-gray-600">Trạng thái</div>
+            </div>
+            <div class="text-center p-4 rounded-lg" :class="authStore.user?.telegramUserId ? 'bg-green-50' : 'bg-red-50'">
+              <div class="text-2xl font-bold" :class="authStore.user?.telegramUserId ? 'text-green-600' : 'text-red-600'">
+                {{ authStore.user?.telegramUserId ? 'Linked' : 'Not Linked' }}
+              </div>
+              <div class="text-sm text-gray-600">Telegram</div>
             </div>
           </div>
         </div>
@@ -178,6 +186,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../components/AppLayout.vue'
+import { chatAPI } from '@/services/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -226,14 +235,23 @@ const logout = () => {
   router.push('/')
 }
 
-const openTelegramBot = () => {
-  // Mở Telegram bot
-  const botUsername = 'buildweb3_bot' // Replace with your actual bot username
-  const telegramUrl = `https://t.me/${botUsername}`
-  window.open(telegramUrl, '_blank')
-  
-  // Hiển thị thông báo
-  alert('🤖 Đang mở Telegram Bot!\n\nGửi /start để bắt đầu và sau đó gửi:\n/link_' + authStore.walletAddress + '\n\nđể liên kết tài khoản Telegram với ví Web3 của bạn.')
+const openTelegramBot = async () => {
+  try {
+    // Lấy linking code từ backend
+    const response = await chatAPI.getLinkAccount(authStore.walletAddress)
+    const linkingCode = response.data.data
+    
+    // Mở Telegram bot
+    const botUsername = 'taiteasicale_bot'
+    const telegramUrl = `https://t.me/${botUsername}`
+    window.open(telegramUrl, '_blank')
+    
+    // Hiển thị thông báo với linking code
+    alert(`🤖 Đang mở Telegram Bot!\n\nGửi /start để bắt đầu và sau đó gửi:\n/link_${linkingCode}\n\nđể liên kết tài khoản Telegram với ví Web3 của bạn.\n\nLinking Code: ${linkingCode}`)
+  } catch (error) {
+    console.error('Lỗi lấy linking code:', error)
+    alert('❌ Không thể tạo linking code. Vui lòng thử lại sau.')
+  }
 }
 
 const formatDate = (dateString) => {

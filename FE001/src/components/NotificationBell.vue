@@ -143,6 +143,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import SockJS from 'sockjs-client'
 import { Stomp } from '@stomp/stompjs'
+import { websocketAPI } from '@/services/api'
 
 const authStore = useAuthStore()
 
@@ -161,7 +162,7 @@ const unreadCount = computed(() => {
 // WebSocket connection
 const connectWebSocket = () => {
   try {
-    const socket = new SockJS('http://localhost:8080/api/ws')
+    const socket = new SockJS(websocketAPI.getWebSocketUrl())
     stompClient.value = Stomp.over(socket)
     
     stompClient.value.connect({}, (frame) => {

@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { ethers } from 'ethers'
-import axios from 'axios'
-
-const API_BASE_URL = 'http://localhost:8080/api'
+import { authAPI } from '@/services/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -83,10 +81,7 @@ export const useAuthStore = defineStore('auth', {
         }
 
         // Lấy nonce từ server
-        const nonceResponse = await axios.get(`${API_BASE_URL}/nonce`, {
-          params: { address: this.walletAddress }
-        })
-
+        const nonceResponse = await authAPI.getNonce(this.walletAddress)
         const nonce = nonceResponse.data.data
         const message = `Dang nhap voi Web3 Auth\nNonce: ${nonce}\nTimestamp: ${Date.now()}`
 
@@ -94,11 +89,7 @@ export const useAuthStore = defineStore('auth', {
         const signature = await this.signMessage(message)
 
         // Gửi request đăng nhập
-        const response = await axios.post(`${API_BASE_URL}/login`, {
-          address: this.walletAddress,
-          message: message,
-          signature: signature
-        })
+        const response = await authAPI.login(this.walletAddress, message, signature)
 
         // Backend trả về ResponseDTO với structure: { status, message, data }
         console.log('Login response:', response.data)
@@ -121,53 +112,17 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async logout() {
-      this.user = null
-      this.walletAddress = null
-      this.tokenBalance = null
-      this.tokenInfo = null
-      this.isConnected = false
-      this.error = null
-    },
-
     async getUserProfile() {
-      try {
-        if (!this.walletAddress) {
-          throw new Error('Chưa kết nối ví!')
-        }
-
-        const response = await axios.get(`${API_BASE_URL}/profile`, {
-          params: { address: this.walletAddress }
-        })
-
-        // Backend trả về ResponseDTO với structure: { status, message, data }
-        if (response.data && response.data.data) {
-          this.user = response.data.data
-        }
-
-        return response.data.data
-      } catch (error) {
-        this.error = error.response?.data?.message || error.message
-        throw error
-      }
-    },
-
-    async updateProfile(profileData) {
       try {
         this.isLoading = true
         this.error = null
 
-        // Map field names to match backend DTO
-        const requestData = {
-          address: this.walletAddress,
-          username: profileData.username,
-          email: profileData.email,
-          bio: profileData.bio
+        if (!this.walletAddress) {
+          throw new Error('Chưa kết nối ví!')
         }
 
-        const response = await axios.put(`${API_BASE_URL}/profile`, requestData)
-
-        // Backend trả về ResponseDTO với structure: { status, message, data }
+        const response = await authAPI.getProfile(this.walletAddress)
+        
         if (response.data && response.data.data) {
           this.user = response.data.data
         }
@@ -181,6 +136,40 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // Token methods removed - not available in backend
+    async updateProfile(profileData) {
+      try {
+        this.isLoading = true
+        this.error = null
+
+        if (!this.walletAddress) {
+          throw new Error('Chưa kết nối ví!')
+        }
+
+        const response = await authAPI.updateProfile({
+          address: this.walletAddress,
+          ...profileData
+        })
+        
+        if (response.data && response.data.data) {
+          this.user = response.data.data
+        }
+
+        return response.data.data
+      } catch (error) {
+        this.error = error.response?.data?.message || error.message
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async logout() {
+      this.user = null
+      this.walletAddress = null
+      this.tokenBalance = null
+      this.tokenInfo = null
+      this.isConnected = false
+      this.error = null
+    }
   }
 })

@@ -18,7 +18,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // FE sẽ connect tới /ws endpoint
+
         registry.addEndpoint("/ws").setAllowedOriginPatterns("*").withSockJS();
     }
 }
+// tai sao con consumer k nhan duoc ?

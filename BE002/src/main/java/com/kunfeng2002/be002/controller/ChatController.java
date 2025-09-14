@@ -43,6 +43,19 @@ public class ChatController {
         );
     }
 
+    @GetMapping("/link_account")
+    public ResponseEntity<ResponseDTO> getLinkAccount(@RequestParam String walletAddress) {
+        String linkingCode = telegramBotService.generateLinkingCode(walletAddress);
+
+        return ResponseEntity.ok(
+                ResponseDTO.builder()
+                        .status(200)
+                        .message("Linking code generated successfully")
+                        .data(linkingCode)
+                        .build()
+        );
+    }
+
     @GetMapping("/health")
     public ResponseEntity<ResponseDTO> chatHealth() {
         return ResponseEntity.ok(

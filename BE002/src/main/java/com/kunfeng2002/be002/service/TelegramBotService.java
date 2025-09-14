@@ -40,7 +40,7 @@ public class TelegramBotService {
                                     .chatId(chatId)
                                     .chatType(ChatType.fromTelegramType(chatType))
                                     .title(title)
-                                    .isActive(true)
+                                    .isActive(1)
                                     .build();
                             if (newChat.isPrivate()) {
                                 userRepository.findByTelegramUserId(telegramUserId).ifPresent(newChat::setUser);
@@ -85,29 +85,58 @@ public class TelegramBotService {
                 .orElseThrow(() -> new DataNotFoundException("Chat not found for Telegram user."));
 
         switch (command) {
-            case "follow":
+            case "/start":
+                return buildResponse("Welcome to Web3 Chat Bot!\n\n" +
+                        "Available commands:\n" +
+                        "/help - Show this help message\n" +
+                        "/follow <wallet_address> - Follow a wallet address\n" +
+                        "/unfollow <wallet_address> - Unfollow a wallet address\n" +
+                        "/list - Show followed addresses\n" +
+                        "/link - Link your Telegram account\n\n" +
+                        "Note: You need to link your Telegram account first!");
+
+            case "/help":
+                return buildResponse("Available commands:\n\n" +
+                        "/start - Welcome message\n" +
+                        "/help - Show this help message\n" +
+                        "/follow <wallet_address> - Follow a wallet address\n" +
+                        "/unfollow <wallet_address> - Unfollow a wallet address\n" +
+                        "/list - Show followed addresses\n" +
+                        "/link - Link your Telegram account\n\n" +
+                        "Example: /follow 0x1234567890abcdef1234567890abcdef12345678");
+
+            case "/follow":
                 if (!isValidAddress(argument)) {
-                    return buildResponse("Invalid wallet address format. Example: follow 0x123...");
+                    return buildResponse("Invalid wallet address format.\n\nExample: /follow 0x1234567890abcdef1234567890abcdef12345678");
                 }
                 followService.follow(chat.getChatId(), argument);
                 return buildResponse("Followed address successfully: " + argument);
 
-            case "unfollow":
-                if (isValidAddress(argument)) {
-                    return buildResponse("Invalid wallet address format. Example: unfollow 0x123...");
+            case "/unfollow":
+                if (!isValidAddress(argument)) {
+                    return buildResponse("Invalid wallet address format.\n\nExample: /unfollow 0x1234567890abcdef1234567890abcdef12345678");
                 }
                 followService.unfollow(chat.getChatId(), argument);
                 return buildResponse("Unfollowed address successfully: " + argument);
 
-            case "list":
+            case "/list":
                 List<String> addresses = followService.getFollowedAddressesByChatId(chat.getChatId());
                 String reply = addresses.isEmpty()
-                        ? "You are not following any addresses."
-                        : "Your followed addresses:\n" + String.join("\n", addresses);
+                        ? "You are not following any addresses.\n\nUse /follow <wallet_address> to start following addresses."
+                        : "Your followed addresses:\n\n" + String.join("\n", addresses);
                 return buildResponse(reply);
 
+            case "/link":
+                return buildResponse("To link your Telegram account:\n\n" +
+                        "1. Go to your Profile page\n" +
+                        "2. Click 'Liên kết Telegram' button\n" +
+                        "3. Follow the instructions to get linking code\n" +
+                        "4. Send /link <linking_code> in private chat with bot\n\n" +
+                        "Your wallet: " + walletAddress);
+
             default:
-                return buildResponse("Unknown command. Available: follow, unfollow, list");
+                return buildResponse("Unknown command.\n\n" +
+                        "Type /help to see available commands.");
         }
     }
 

@@ -46,7 +46,7 @@ public class User {
     private String bio;
 
     @Column(name = "is_active")
-    private Boolean isActive = true;
+    private Integer isActive = 1;
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
