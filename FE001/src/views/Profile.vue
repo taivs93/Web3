@@ -1,31 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <h1 class="text-xl font-bold text-gray-900">Web3 Auth App</h1>
-          </div>
-          <div class="flex items-center space-x-4">
-            <router-link
-              to="/"
-              class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              Trang chủ
-            </router-link>
-            <button
-              @click="logout"
-              class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
-            >
-              Đăng xuất
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <AppLayout>
+    <div class="max-w-4xl mx-auto">
       <!-- Loading State -->
       <div v-if="authStore.isLoading" class="text-center py-12">
         <svg class="animate-spin h-12 w-12 text-indigo-600 mx-auto" fill="none" viewBox="0 0 24 24">
@@ -195,17 +170,14 @@
         </div>
       </div>
     </div>
-
-    <!-- Chat Widget -->
-    <ChatWidget />
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import ChatWidget from '../components/ChatWidget.vue'
+import AppLayout from '../components/AppLayout.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

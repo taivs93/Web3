@@ -19,7 +19,9 @@
     "axios": "^1.6.7",
     "pinia": "^2.1.7",
     "@headlessui/vue": "^1.7.19",
-    "@heroicons/vue": "^2.1.1"
+    "@heroicons/vue": "^2.1.1",
+    "sockjs-client": "^1.6.1",
+    "@stomp/stompjs": "^7.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",

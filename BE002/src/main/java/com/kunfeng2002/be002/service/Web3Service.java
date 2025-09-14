@@ -19,7 +19,11 @@ public class Web3Service {
 
     public boolean verifySignature(String message, String signature, String address) throws SignatureException {
         try {
-
+            System.out.println("=== Web3Service verifySignature ===");
+            System.out.println("Original address: " + address);
+            System.out.println("Original signature: " + signature);
+            System.out.println("Message: " + message);
+            
             if (address.startsWith("0x")) {
                 address = address.toLowerCase();
             } else {
@@ -30,20 +34,23 @@ public class Web3Service {
                 signature = signature.substring(2);
             }
 
+            System.out.println("Processed address: " + address);
+            System.out.println("Processed signature: " + signature);
+            System.out.println("Signature length: " + signature.length());
+
             if (signature.length() != 130) {
                 throw new SignatureException("Invalid signature length: " + signature.length());
             }
 
-            boolean web3jResult = verifyWithWeb3j(message, signature, address);
-            if (web3jResult) {
-                return true;
-            }
-
-            return verifyWithBouncyCastle(message, signature, address);
+            boolean result = verifyWithBouncyCastle(message, signature, address);
+            System.out.println("Verification result: " + result);
+            return result;
             
         } catch (SignatureException e) {
+            System.out.println("SignatureException: " + e.getMessage());
             throw e;
         } catch (Exception e) {
+            System.out.println("Exception: " + e.getMessage());
             e.printStackTrace();
             throw new SignatureException("Signature verification failed: " + e.getMessage());
         }
@@ -66,29 +73,11 @@ public class Web3Service {
             System.arraycopy(signatureBytes, 32, s, 0, 32);
 
             int v = signatureBytes[64] & 0xFF;
-            System.out.println("Original v: " + v);
             int recoveryId = v >= 27 ? v - 27 : v;
-
-            if (recoveryId >= 0 && recoveryId <= 3) {
-                try {
-                    Sign.SignatureData sigData = new Sign.SignatureData((byte) (recoveryId % 2), r, s);
-                    BigInteger publicKey = Sign.signedMessageToKey(messageHash, sigData);
-                    String recoveredAddress = "0x" + Keys.getAddress(publicKey);
-                    
-                    System.out.println("Recovered address with recoveryId " + recoveryId + ": " + recoveredAddress);
-                    System.out.println("Expected address: " + address);
-                    
-                    if (recoveredAddress.equalsIgnoreCase(address)) {
-                        return true;
-                    }
-                } catch (Exception e) {
-                    System.out.println("Failed with recoveryId " + recoveryId + ": " + e.getMessage());
-                }
-            }
 
             for (int i = 0; i <= 3; i++) {
                 try {
-                    Sign.SignatureData sigData = new Sign.SignatureData((byte) i, r, s);
+                    Sign.SignatureData sigData = new Sign.SignatureData((byte) (i % 2), r, s);
                     BigInteger publicKey = Sign.signedMessageToKey(messageHash, sigData);
                     String recoveredAddress = "0x" + Keys.getAddress(publicKey);
                     
@@ -96,7 +85,7 @@ public class Web3Service {
                         return true;
                     }
                 } catch (Exception e) {
-                    System.out.println("Fallback failed with recoveryId " + i + ": " + e.getMessage());
+                    System.out.println("Web3j recoveryId " + i + " failed: " + e.getMessage());
                 }
             }
             
@@ -130,12 +119,11 @@ public class Web3Service {
             for (int recoveryId = 0; recoveryId <= 3; recoveryId++) {
                 try {
                     String recoveredAddress = recoverAddressBC(messageHash, rBig, sBig, recoveryId);
-                    System.out.println("BC Recovery " + recoveryId + " -> " + recoveredAddress);
                     if (recoveredAddress != null && recoveredAddress.equalsIgnoreCase(address)) {
                         return true;
                     }
                 } catch (Exception e) {
-                    System.out.println("BC Recovery " + recoveryId + " failed: " + e.getMessage());
+                    System.out.println("BouncyCastle recoveryId " + recoveryId + " failed: " + e.getMessage());
                 }
             }
             return false;
@@ -158,10 +146,12 @@ public class Web3Service {
             X9ECParameters params = SECNamedCurves.getByName("secp256k1");
             ECDomainParameters domain = new ECDomainParameters(params.getCurve(), params.getG(), params.getN());
             BigInteger n = domain.getN();
+            
             BigInteger x = r;
             if (recoveryId >= 2) {
                 x = r.add(n);
             }
+            
             ECPoint R = decompressPoint(params.getCurve(), x, (recoveryId & 1) == 1);
             if (R == null) {
                 return null;
@@ -181,7 +171,7 @@ public class Web3Service {
 
             return "0x" + Numeric.toHexString(address).substring(2);
         } catch (Exception e) {
-            System.out.println("BC address recovery failed: " + e.getMessage());
+            System.out.println("BouncyCastle address recovery failed: " + e.getMessage());
             return null;
         }
     }

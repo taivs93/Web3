@@ -8,12 +8,30 @@
             <h1 class="text-xl font-bold text-gray-900">Web3 Auth App</h1>
           </div>
           <div class="flex items-center space-x-4">
-            <router-link
-              to="/login"
-              class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
-            >
-              Đăng nhập
-            </router-link>
+            <template v-if="authStore.isAuthenticated">
+              <router-link
+                to="/profile"
+                class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Hồ sơ
+              </router-link>
+              <!-- Notification Bell -->
+              <NotificationBell />
+              <button
+                @click="logout"
+                class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                Đăng xuất
+              </button>
+            </template>
+            <template v-else>
+              <router-link
+                to="/login"
+                class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
+              >
+                Đăng nhập
+              </router-link>
+            </template>
           </div>
         </div>
       </div>
@@ -163,11 +181,23 @@
     </div>
 
     <!-- Chat Widget only shows when authenticated -->
+    <ChatWidget v-if="authStore.isAuthenticated" />
   </div>
 </template>
 
 <script setup>
-// No imports needed for unauthenticated home page
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import ChatWidget from '@/components/ChatWidget.vue'
+import NotificationBell from '@/components/NotificationBell.vue'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const logout = () => {
+  authStore.logout()
+  router.push('/')
+}
 
 // const openTelegramChat = () => {
 //   // Mở Telegram bot

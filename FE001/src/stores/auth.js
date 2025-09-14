@@ -101,10 +101,15 @@ export const useAuthStore = defineStore('auth', {
         })
 
         // Backend trả về ResponseDTO với structure: { status, message, data }
+        console.log('Login response:', response.data)
+        
         if (response.data && response.data.data) {
           this.user = response.data.data.user
           this.walletAddress = response.data.data.walletAddress || this.walletAddress
           this.isConnected = true
+          console.log('User set:', this.user)
+          console.log('Wallet address set:', this.walletAddress)
+          console.log('Is authenticated:', this.isAuthenticated)
         }
 
         return response.data.data
