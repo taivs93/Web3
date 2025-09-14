@@ -88,37 +88,99 @@
           <div 
             v-for="notification in notifications" 
             :key="notification.id"
-            @click="markAsRead(notification.id)"
-            class="px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+            class="border-b border-gray-100 transition-all duration-200"
             :class="{ 'bg-blue-50': !notification.read }"
           >
-            <div class="flex items-start space-x-3">
-              <!-- Notification Icon -->
-              <div class="flex-shrink-0">
-                <div 
-                  class="w-8 h-8 rounded-full flex items-center justify-center"
-                  :class="getNotificationIconClass(notification.type)"
-                >
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path :d="getNotificationIcon(notification.type)"></path>
-                  </svg>
+            <!-- Notification Header (Clickable) -->
+            <div 
+              @click="toggleNotification(notification)"
+              class="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+            >
+              <div class="flex items-start space-x-3">
+                <!-- Notification Icon -->
+                <div class="flex-shrink-0">
+                  <div 
+                    class="w-8 h-8 rounded-full flex items-center justify-center"
+                    :class="getNotificationIconClass(notification.type)"
+                  >
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path :d="getNotificationIcon(notification.type)"></path>
+                    </svg>
+                  </div>
+                </div>
+                
+                <!-- Notification Content -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-gray-900 truncate">
+                      {{ notification.title }}
+                    </p>
+                    <div class="flex items-center space-x-2">
+                      <div v-if="!notification.read" class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <svg 
+                        class="w-4 h-4 text-gray-400 transition-transform duration-200"
+                        :class="{ 'rotate-180': isExpanded(notification.id) }"
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-600 mt-1">
+                    {{ notification.message }}
+                  </p>
+                  <p class="text-xs text-gray-500 mt-2">
+                    {{ formatTime(notification.timestamp) }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expanded Details -->
+            <div 
+              v-if="isExpanded(notification.id)"
+              class="px-4 pb-3 bg-gray-50 border-t border-gray-200"
+            >
+              <div v-if="getNotificationDetails(notification)" class="mt-3 space-y-2">
+                <div class="text-xs text-gray-600">
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <span class="font-medium">Từ địa chỉ:</span>
+                      <p class="font-mono text-xs break-all">{{ getNotificationDetails(notification).fromAddress }}</p>
+                    </div>
+                    <div>
+                      <span class="font-medium">Đến địa chỉ:</span>
+                      <p class="font-mono text-xs break-all">{{ getNotificationDetails(notification).toAddress }}</p>
+                    </div>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <span class="font-medium">Mạng:</span>
+                      <p class="text-xs">{{ getNotificationDetails(notification).network }}</p>
+                    </div>
+                    <div>
+                      <span class="font-medium">Giá trị:</span>
+                      <p class="text-xs font-mono">{{ formatValue(getNotificationDetails(notification).value, getNotificationDetails(notification).network) }}</p>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-2">
+                    <span class="font-medium">Hash giao dịch:</span>
+                    <p class="font-mono text-xs break-all">{{ getNotificationDetails(notification).transactionHash }}</p>
+                  </div>
+                  
+                  <div class="mt-2">
+                    <span class="font-medium">Block số:</span>
+                    <p class="font-mono text-xs">{{ getNotificationDetails(notification).blockNumber }}</p>
+                  </div>
                 </div>
               </div>
               
-              <!-- Notification Content -->
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-900 truncate">
-                  {{ notification.title }}
-                </p>
-                <p class="text-sm text-gray-600 mt-1">
-                  {{ notification.message }}
-                </p>
-                <div class="flex items-center justify-between mt-2">
-                  <p class="text-xs text-gray-500">
-                    {{ formatTime(notification.timestamp) }}
-                  </p>
-                  <div v-if="!notification.read" class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                </div>
+              <div v-else class="mt-3 text-xs text-gray-500">
+                <p>Không có thông tin chi tiết</p>
               </div>
             </div>
           </div>
@@ -288,10 +350,61 @@ const formatTime = (timestamp) => {
 const handleClickOutside = (event) => {
   if (!event.target.closest('.relative')) {
     showNotifications.value = false
+    expandedNotification.value = null
   }
 }
 
 // Lifecycle
+// Methods for expand/collapse notifications
+const toggleNotification = (notification) => {
+  if (expandedNotification.value === notification.id) {
+    expandedNotification.value = null
+  } else {
+    expandedNotification.value = notification.id
+    // Mark as read when expanded
+    if (!notification.read) {
+      notification.read = true
+    }
+  }
+}
+
+const isExpanded = (notificationId) => {
+  return expandedNotification.value === notificationId
+}
+
+const getNotificationDetails = (notification) => {
+  if (!notification.data) return null
+  
+  const data = notification.data
+  return {
+    fromAddress: data.fromAddress || data.from_address || 'Unknown',
+    toAddress: data.toAddress || data.to_address || 'Unknown',
+    network: data.network || data.networkAsString || 'Unknown',
+    transactionHash: data.transactionHash || data.transaction_hash || 'Unknown',
+    value: data.value || '0',
+    blockNumber: data.blockNumber || data.block_number || 'Unknown',
+    timestamp: data.timestamp || notification.timestamp
+  }
+}
+
+const formatValue = (value, network) => {
+  if (!value || value === '0') return '0'
+  
+  const numValue = parseFloat(value)
+  if (isNaN(numValue)) return value
+  
+  // Convert wei to ETH (assuming 18 decimals)
+  const ethValue = numValue / Math.pow(10, 18)
+  
+  if (ethValue < 0.001) {
+    return `${ethValue.toFixed(6)} ETH`
+  } else if (ethValue < 1) {
+    return `${ethValue.toFixed(4)} ETH`
+  } else {
+    return `${ethValue.toFixed(2)} ETH`
+  }
+}
+
 onMounted(() => {
   // Add some sample notifications for demo
   addNotification({
