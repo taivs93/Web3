@@ -2,7 +2,7 @@ spring:
   application:
     name: web3-backend
   datasource:
-    url: jdbc:mysql://mysql:3306/db_web3  # dùng tên service mysql
+    url: jdbc:mysql://mysql:3306/db_web3
     username: root
     password: 251202
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -23,7 +23,7 @@ spring:
         order_inserts: true
         order_updates: true
   kafka:
-    bootstrap-servers: kafka:9092  # dùng tên service kafka
+    bootstrap-servers: kafka:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -44,7 +44,7 @@ spring:
 
   data:
     redis:
-      host: redis  # dùng tên service redis
+      host: redis
       port: 6379
 
 server:
@@ -61,7 +61,7 @@ logging:
     org.springframework.cache: DEBUG
 
 web3j:
-  client-address: http://host.docker.internal:8545  # connect tới RPC chạy ở host
+  client-address: http://host.docker.internal:8545
   network-id: 1
 
 telegram:
@@ -69,26 +69,28 @@ telegram:
     username: taiteasicale_bot
     token: 8493544022:AAEL-OiS659ZDo6z8I4OPSi6uOHzG1OK9PY
 
+
 network:
   ethereum:
-    rpc-url: wss://sepolia.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
-    chain-id: 11155111
+    rpc-url: wss://mainnet.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
+    chain-id: 1
   bsc:
-    rpc-url: wss://bnb-mainnet.g.alchemy.com/v2/wmnM3BSWRLGg__SqCyhEu
+    rpc-url: wss://bsc-mainnet.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
     chain-id: 56
   arbitrum:
-    rpc-url: wss://arbitrum-sepolia.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
-    chain-id: 421614
+    rpc-url: wss://arbitrum-mainnet.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
+    chain-id: 42161
   optimism:
-    rpc-url: wss://optimism-sepolia.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
-    chain-id: 11155420
+    rpc-url: wss://optimism-mainnet.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
+    chain-id: 10
   avalanche:
-    rpc-url: https://api.avax-test.network/ext/bc/C/rpc
-    chain-id: 43113
+    rpc-url: wss://api.avax.network/ext/bc/C/ws
+    chain-id: 43114
 
 app:
   cache:
     refresh-interval: 300000
+    fee-ttl: 15
   blockchain:
     reconnect-delay: 5000
     max-retry-attempts: 3

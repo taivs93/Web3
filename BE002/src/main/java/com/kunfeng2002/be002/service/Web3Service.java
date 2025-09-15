@@ -3,6 +3,9 @@ package com.kunfeng2002.be002.service;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SignatureException;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.digests.KeccakDigest;
@@ -12,10 +15,42 @@ import org.springframework.stereotype.Service;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.utils.Numeric;
 
 @Service
+@Slf4j
 public class Web3Service {
+
+    private final Map<String, Web3j> web3Clients;
+
+    public Web3Service(Map<String, Web3j> web3Clients) {
+        this.web3Clients = web3Clients;
+    }
+
+    public BigInteger getGasPrice(String network) {
+        Web3j web3 = web3Clients.get(network.toUpperCase());
+        if (web3 == null) {
+            throw new IllegalArgumentException("Unsupported network: " + network);
+        }
+
+        try {
+            EthGasPrice gasPriceResponse = web3.ethGasPrice().send();
+            return gasPriceResponse.getGasPrice();
+        } catch (Exception e) {
+            log.error("Failed to fetch gas price for network {}", network, e);
+            throw new RuntimeException("Unable to fetch gas price from " + network, e);
+        }
+    }
+
+    public Web3j getWeb3(String network) {
+        Web3j web3 = web3Clients.get(network.toUpperCase());
+        if (web3 == null) {
+            throw new IllegalArgumentException("Unsupported network: " + network);
+        }
+        return web3;
+    }
 
     public boolean verifySignature(String message, String signature, String address) throws SignatureException {
         try {

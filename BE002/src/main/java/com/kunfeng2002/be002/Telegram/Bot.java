@@ -1,6 +1,7 @@
 package com.kunfeng2002.be002.Telegram;
 
 import com.kunfeng2002.be002.event.TelegramMessageEvent;
+import com.kunfeng2002.be002.service.GasService;
 import com.kunfeng2002.be002.service.TelegramBotService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,8 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.math.BigInteger;
+
 @Component
 @Slf4j
 public class Bot extends TelegramLongPollingBot {
@@ -21,13 +24,15 @@ public class Bot extends TelegramLongPollingBot {
     private final String botUsername;
     private final String botToken;
     private final TelegramBotService telegramBotService;
+    private final GasService gasService;
 
     public Bot(@Value("${telegram.bot.username}") String botUsername,
                @Value("${telegram.bot.token}") String botToken,
-               TelegramBotService telegramBotService) {
+               TelegramBotService telegramBotService,GasService gasService) {
         this.botUsername = botUsername;
         this.botToken = botToken;
         this.telegramBotService = telegramBotService;
+        this.gasService = gasService;
     }
 
     @Override
@@ -109,6 +114,11 @@ public class Bot extends TelegramLongPollingBot {
                             : argument.isEmpty()
                             ? "Please provide a linking code. Use: /link <linking_code>"
                             : telegramBotService.linkUserToTelegram(context.userId, argument);
+                    break;
+                case "/gas":
+                    response = argument.isEmpty()
+                            ? gasService.getGasEstimate("bsc", null)
+                            : telegramBotService.handleGasCommand(argument);
                     break;
                 case "/help":
                     response = isPrivateChat(context.chatType)

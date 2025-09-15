@@ -10,6 +10,8 @@ import org.web3j.protocol.websocket.WebSocketClient;
 import org.web3j.protocol.websocket.WebSocketService;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @Slf4j
@@ -30,49 +32,35 @@ public class Web3Config {
     @Value("${network.avalanche.rpc-url}")
     private String avalancheRpc;
 
-    @Bean("ETH")
-    public Web3j web3Ethereum() {
-        return createWeb3jClient(ethereumRpc, "Ethereum");
-    }
-
-    @Bean("BSC")
-    public Web3j web3Bsc() {
-        return createWeb3jClient(bscRpc, "BSC");
-    }
-
-    @Bean("ARBITRUM")
-    public Web3j web3Arbitrum() {
-        return createWeb3jClient(arbitrumRpc, "Arbitrum");
-    }
-
-    @Bean("OPTIMISM")
-    public Web3j web3Optimism() {
-        return createWeb3jClient(optimismRpc, "Optimism");
-    }
-
-    @Bean("AVALANCHE")
-    public Web3j web3Avalanche() {
-        return createWeb3jClient(avalancheRpc, "Avalanche");
+    @Bean
+    public Map<String, Web3j> web3Clients() {
+        Map<String, Web3j> map = new HashMap<>();
+        map.put("ETH", createWeb3jClient(ethereumRpc, "Ethereum"));
+        map.put("BSC", createWeb3jClient(bscRpc, "BSC"));
+        map.put("ARBITRUM", createWeb3jClient(arbitrumRpc, "Arbitrum"));
+        map.put("OPTIMISM", createWeb3jClient(optimismRpc, "Optimism"));
+        map.put("AVALANCHE", createWeb3jClient(avalancheRpc, "Avalanche"));
+        return map;
     }
 
     private Web3j createWeb3jClient(String rpcUrl, String networkName) {
         try {
-            Web3j web3j;
             if (rpcUrl.startsWith("wss://")) {
-                WebSocketService webSocketService = new WebSocketService(new WebSocketClient(new URI(rpcUrl)), true);
-                webSocketService.connect();
-                web3j = Web3j.build(webSocketService);
-                log.info("Connected to {} network using WebSocket. Client version: {}", networkName, web3j.web3ClientVersion().send().getWeb3ClientVersion());
+                WebSocketService wsService = new WebSocketService(new WebSocketClient(new URI(rpcUrl)), true);
+                wsService.connect();
+                Web3j web3j = Web3j.build(wsService);
+                log.info("Connected to {} (WebSocket)", networkName);
+                return web3j;
             } else {
                 HttpService httpService = new HttpService(rpcUrl);
                 httpService.addHeader("Connection", "keep-alive");
-                web3j = Web3j.build(httpService);
-                log.info("Connected to {} network using HTTP. Client version: {}", networkName, web3j.web3ClientVersion().send().getWeb3ClientVersion());
+                Web3j web3j = Web3j.build(httpService);
+                log.info("Connected to {} (HTTP)", networkName);
+                return web3j;
             }
-            return web3j;
         } catch (Exception e) {
-            log.error("Failed to connect to {} network at {}", networkName, rpcUrl, e);
-            throw new RuntimeException("Failed to initialize " + networkName + " Web3j client", e);
+            log.error("Failed to connect to {} network: {}", networkName, rpcUrl, e);
+            throw new RuntimeException("Failed to initialize " + networkName, e);
         }
     }
 }

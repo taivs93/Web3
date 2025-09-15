@@ -16,6 +16,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class TelegramBotService {
     private final ChatRepository chatRepository;
     private final FollowService followService;
     private final UserRepository userRepository;
+    private final GasService gasService;
 
     @Transactional
     public void startBot(Long telegramUserId, Long chatId, String chatType, String title) {
@@ -133,7 +135,14 @@ public class TelegramBotService {
                         "3. Follow the instructions to get linking code\n" +
                         "4. Send /link <linking_code> in private chat with bot\n\n" +
                         "Your wallet: " + walletAddress);
-
+            case "/gas":
+                String gasResponse;
+                if (argument == null || argument.isEmpty()) {
+                    gasResponse = gasService.getGasEstimate("bsc", null);
+                } else {
+                    gasResponse = handleGasCommand(argument);
+                }
+                return buildResponse(gasResponse);
             default:
                 return buildResponse("Unknown command.\n\n" +
                         "Type /help to see available commands.");
@@ -187,6 +196,16 @@ public class TelegramBotService {
         log.info("Generated linking code {} for user with wallet address {}", linkingCode, walletAddress);
 
         return linkingCode;
+    }
+    public String handleGasCommand(String argument) {
+        try {
+            String[] parts = argument.split(" ");
+            String network = parts[0];
+            BigInteger gasLimit = parts.length > 1 ? new BigInteger(parts[1]) : null;
+            return gasService.getGasEstimate(network, gasLimit);
+        } catch (Exception e) {
+            return "Invalid format. Use: /gas <network> [gasLimit]";
+        }
     }
 
     private ChatMessageResponse buildResponse(String message) {
