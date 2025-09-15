@@ -33,11 +33,13 @@ public abstract class LegacyFeeService implements FeeService {
             EthGasPrice gasPriceResponse = web3.ethGasPrice().send();
             BigInteger gasPrice = gasPriceResponse.getGasPrice();
 
+            BigInteger gasLimit = request.getGasLimit() != null ? request.getGasLimit() : BigInteger.valueOf(21000);
+
             return FeeResponse.builder()
                     .network(networkType.name())
-                    .slow(buildFeeLevel(gasPrice, request.getGasLimit(), request.getSlowMultiplier()))
-                    .recommended(buildFeeLevel(gasPrice, request.getGasLimit(), request.getRecommendedMultiplier()))
-                    .fast(buildFeeLevel(gasPrice, request.getGasLimit(), request.getFastMultiplier()))
+                    .slow(buildFeeLevel(gasPrice, gasLimit, request.getSlowMultiplier()))
+                    .recommended(buildFeeLevel(gasPrice, gasLimit, request.getRecommendedMultiplier()))
+                    .fast(buildFeeLevel(gasPrice, gasLimit, request.getFastMultiplier()))
                     .build();
 
         } catch (Exception e) {

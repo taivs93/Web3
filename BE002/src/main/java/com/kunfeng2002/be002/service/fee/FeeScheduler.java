@@ -1,3 +1,4 @@
+// FeeScheduler.java
 package com.kunfeng2002.be002.service.fee;
 
 import com.kunfeng2002.be002.dto.request.FeeRequest;
@@ -18,16 +19,26 @@ public class FeeScheduler {
 
     @Scheduled(fixedRate = 5000)
     public void refreshAllFees() {
-        FeeRequest defaultRequest = FeeRequest.builder()
-                .gasLimit(BigInteger.valueOf(21000))
+        FeeRequest baseRequest = FeeRequest.builder()
+                .blockCount(5)
+                .percentile(25)
                 .build();
 
         for (FeeService service : feeServices) {
-            FeeResponse feeResponse = service.getFeeEstimate(defaultRequest);
-            if (feeResponse.getSlow() != null) {
-                cacheService.update(service.getNetwork(), feeResponse);
+            FeeResponse response = service.getFeeEstimate(baseRequest);
+
+            if (response.getRecommended() != null) {
+                String network = service.getNetwork().name().toLowerCase();
+                if (response.getRecommended().getPriorityFeePerGas() != null &&
+                        response.getRecommended().getPriorityFeePerGas().compareTo(BigInteger.ZERO) > 0) {
+                    cacheService.updateBaseFee(network,
+                            response.getRecommended().getMaxFeePerGas()
+                                    .subtract(response.getRecommended().getPriorityFeePerGas()),
+                            response.getRecommended().getPriorityFeePerGas());
+                } else {
+                    cacheService.updateGasPrice(network, response.getRecommended().getMaxFeePerGas());
+                }
             }
         }
     }
 }
-

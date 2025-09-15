@@ -15,7 +15,6 @@ import org.web3j.protocol.core.methods.response.EthFeeHistory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -43,7 +42,7 @@ public class EthereumFeeService implements FeeService {
             EthFeeHistory feeHistory = web3.ethFeeHistory(
                             request.getBlockCount(),
                             DefaultBlockParameterName.LATEST,
-                            Arrays.asList(request.getPercentile()))
+                            List.of(request.getPercentile()))
                     .send();
 
             List<List<BigInteger>> rewards = feeHistory.getResult().getReward();
@@ -52,11 +51,13 @@ public class EthereumFeeService implements FeeService {
                     .reduce(BigInteger.ZERO, BigInteger::add)
                     .divide(BigInteger.valueOf(rewards.size()));
 
+            BigInteger gasLimit = request.getGasLimit() != null ? request.getGasLimit() : BigInteger.valueOf(21000);
+
             return FeeResponse.builder()
                     .network("ETH")
-                    .slow(buildFeeLevel(baseFee, priorityFee, request.getGasLimit(), request.getSlowMultiplier()))
-                    .recommended(buildFeeLevel(baseFee, priorityFee, request.getGasLimit(), request.getRecommendedMultiplier()))
-                    .fast(buildFeeLevel(baseFee, priorityFee, request.getGasLimit(), request.getFastMultiplier()))
+                    .slow(buildFeeLevel(baseFee, priorityFee, gasLimit, request.getSlowMultiplier()))
+                    .recommended(buildFeeLevel(baseFee, priorityFee, gasLimit, request.getRecommendedMultiplier()))
+                    .fast(buildFeeLevel(baseFee, priorityFee, gasLimit, request.getFastMultiplier()))
                     .build();
 
         } catch (Exception e) {
@@ -64,6 +65,7 @@ public class EthereumFeeService implements FeeService {
             return FeeResponse.builder().network("ETH").build();
         }
     }
+
 
     private FeeLevel buildFeeLevel(BigInteger baseFee, BigInteger priorityFee,
                                    BigInteger gasLimit, BigDecimal multiplier) {

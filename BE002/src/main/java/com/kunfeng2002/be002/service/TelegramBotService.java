@@ -1,7 +1,9 @@
 package com.kunfeng2002.be002.service;
 
+import com.kunfeng2002.be002.dto.request.FeeRequest;
 import com.kunfeng2002.be002.dto.request.WebCommandRequest;
 import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
+import com.kunfeng2002.be002.dto.response.FeeResponse;
 import com.kunfeng2002.be002.entity.Chat;
 import com.kunfeng2002.be002.entity.ChatType;
 import com.kunfeng2002.be002.entity.User;
@@ -136,17 +138,30 @@ public class TelegramBotService {
                         "4. Send /link <linking_code> in private chat with bot\n\n" +
                         "Your wallet: " + walletAddress);
             case "/gas":
-                String gasResponse;
+                FeeResponse gasResponse;
                 if (argument == null || argument.isEmpty()) {
-                    gasResponse = gasService.getGasEstimate("bsc", null);
+                    gasResponse = gasService.getFeeEstimate(request.getNetwork(), FeeRequest.builder().build());
                 } else {
-                    gasResponse = handleGasCommand(argument);
+                    gasResponse = parseGasArgument(argument);
                 }
-                return buildResponse(gasResponse);
+                return buildResponse(formatFeeResponse(gasResponse));
+
             default:
                 return buildResponse("Unknown command.\n\n" +
                         "Type /help to see available commands.");
         }
+    }
+
+    private FeeResponse parseGasArgument(String argument) {
+        String[] parts = argument.split(" ");
+        String network = parts[0];
+        BigInteger gasLimit = parts.length > 1 ? new BigInteger(parts[1]) : null;
+
+        FeeRequest feeRequest = FeeRequest.builder()
+                .gasLimit(gasLimit)
+                .build();
+
+        return gasService.getFeeEstimate(network, feeRequest);
     }
 
     public void notifyUser(Long chatId, String message) {
@@ -202,10 +217,35 @@ public class TelegramBotService {
             String[] parts = argument.split(" ");
             String network = parts[0];
             BigInteger gasLimit = parts.length > 1 ? new BigInteger(parts[1]) : null;
-            return gasService.getGasEstimate(network, gasLimit);
+
+            FeeRequest feeRequest = FeeRequest.builder()
+                    .gasLimit(gasLimit)
+                    .build();
+
+            FeeResponse response = gasService.getFeeEstimate(network, feeRequest);
+
+            return formatFeeResponse(response);
         } catch (Exception e) {
             return "Invalid format. Use: /gas <network> [gasLimit]";
         }
+    }
+
+    private String formatFeeResponse(FeeResponse res) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Gas Estimate (").append(res.getNetwork().toUpperCase()).append(")\n\n");
+        if (res.getSlow() != null) {
+            sb.append("Slow: ").append(res.getSlow().getMaxFeePerGas()).append(" wei")
+                    .append(" → Total: ").append(res.getSlow().getTotalFee()).append("\n");
+        }
+        if (res.getRecommended() != null) {
+            sb.append("Recommended: ").append(res.getRecommended().getMaxFeePerGas()).append(" wei")
+                    .append(" → Total: ").append(res.getRecommended().getTotalFee()).append("\n");
+        }
+        if (res.getFast() != null) {
+            sb.append("Fast: ").append(res.getFast().getMaxFeePerGas()).append(" wei")
+                    .append(" → Total: ").append(res.getFast().getTotalFee()).append("\n");
+        }
+        return sb.toString();
     }
 
     private ChatMessageResponse buildResponse(String message) {

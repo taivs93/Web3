@@ -1,44 +1,55 @@
 package com.kunfeng2002.be002.service;
 
+import com.kunfeng2002.be002.dto.request.FeeRequest;
+import com.kunfeng2002.be002.dto.response.FeeLevel;
+import com.kunfeng2002.be002.dto.response.FeeResponse;
+import com.kunfeng2002.be002.service.fee.FeeCacheService;
+import com.kunfeng2002.be002.service.fee.FeeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class GasService {
 
-    private final Web3Service web3Service;
-    private final StringRedisTemplate redisTemplate;
+    private final List<FeeService> feeServices;
+    private final FeeCacheService cacheService;
 
-    public String getGasEstimate(String network, BigInteger gasLimit) {
-        String cacheKey = "gas:" + network;
-        String cachedPrice = redisTemplate.opsForValue().get(cacheKey);
+    public FeeResponse getFeeEstimate(String network, FeeRequest request) {
+        FeeService service = feeServices.stream()
+                .filter(s -> s.getNetwork().name().equalsIgnoreCase(network))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported network: " + network));
 
-        BigInteger gasPrice;
-        if (cachedPrice != null) {
-            gasPrice = new BigInteger(cachedPrice);
-        } else {
-            gasPrice = web3Service.getGasPrice(network);
-            redisTemplate.opsForValue().set(cacheKey, gasPrice.toString(), 30, TimeUnit.SECONDS);
+        BigInteger cachedGasPrice = cacheService.getGasPrice(network);
+        if (cachedGasPrice != null) {
+            return FeeResponse.builder()
+                    .network(network)
+                    .slow(serviceLevel(cachedGasPrice, request, request.getSlowMultiplier()))
+                    .recommended(serviceLevel(cachedGasPrice, request, request.getRecommendedMultiplier()))
+                    .fast(serviceLevel(cachedGasPrice, request, request.getFastMultiplier()))
+                    .build();
         }
 
-        BigInteger fee = gasLimit != null
-                ? gasPrice.multiply(gasLimit)
-                : null;
-
-        return buildResponse(network, gasPrice, gasLimit, fee);
+        FeeResponse freshResponse = service.getFeeEstimate(request);
+        if (freshResponse.getRecommended() != null) {
+            cacheService.updateGasPrice(network, freshResponse.getRecommended().getMaxFeePerGas());
+        }
+        return freshResponse;
     }
 
-    private String buildResponse(String network, BigInteger gasPrice, BigInteger gasLimit, BigInteger fee) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Gas Estimate (").append(network.toUpperCase()).append(")\n");
-        sb.append("Gas Price: ").append(gasPrice).append(" wei\n");
-        if (gasLimit != null) sb.append("Gas Limit: ").append(gasLimit).append("\n");
-        if (fee != null) sb.append("Total Fee: ").append(fee).append(" wei");
-        return sb.toString();
+    private FeeLevel serviceLevel(
+            BigInteger gasPrice, FeeRequest request, java.math.BigDecimal multiplier) {
+        BigInteger gasLimit = request.getGasLimit() != null ? request.getGasLimit() : BigInteger.valueOf(21000);
+        BigInteger finalGasPrice = multiplier.multiply(new java.math.BigDecimal(gasPrice)).toBigInteger();
+        return com.kunfeng2002.be002.dto.response.FeeLevel.builder()
+                .maxFeePerGas(finalGasPrice)
+                .priorityFeePerGas(BigInteger.ZERO)
+                .gasLimit(gasLimit)
+                .totalFee(finalGasPrice.multiply(gasLimit).toString())
+                .build();
     }
 }
