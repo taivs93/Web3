@@ -22,4 +22,3 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws").setAllowedOriginPatterns("*").withSockJS();
     }
 }
-// tai sao con consumer k nhan duoc ?

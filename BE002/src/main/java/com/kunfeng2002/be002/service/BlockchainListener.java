@@ -50,11 +50,11 @@ public class BlockchainListener {
     public BlockchainListener(
             KafkaTemplate<String, String> kafkaTemplate,
             ObjectMapper objectMapper,
-            @Qualifier("ETH") Web3j ethWeb3,
+//            @Qualifier("ETH") Web3j ethWeb3,
             @Qualifier("BSC") Web3j bscWeb3,
-            @Qualifier("ARBITRUM") Web3j arbitrumWeb3,
-            @Qualifier("OPTIMISM") Web3j optimismWeb3,
-            @Qualifier("AVALANCHE") Web3j avalancheWeb3,
+//            @Qualifier("ARBITRUM") Web3j arbitrumWeb3,
+//            @Qualifier("OPTIMISM") Web3j optimismWeb3,
+//            @Qualifier("AVALANCHE") Web3j avalancheWeb3,
             FollowService followService
     ) {
         this.kafkaTemplate = kafkaTemplate;
@@ -62,11 +62,11 @@ public class BlockchainListener {
         this.followService = followService;
 
         this.web3Clients = Map.of(
-                "ETH", ethWeb3,
-                "BSC", bscWeb3,
-                "ARBITRUM", arbitrumWeb3,
-                "OPTIMISM", optimismWeb3,
-                "AVALANCHE", avalancheWeb3
+//                "ETH", ethWeb3,
+                "BSC", bscWeb3
+//                "ARBITRUM", arbitrumWeb3,
+//                "OPTIMISM", optimismWeb3,
+//                "AVALANCHE", avalancheWeb3
         );
 
         web3Clients.keySet().forEach(network -> lastProcessedBlocks.put(network, new AtomicReference<>(BigInteger.ZERO)));

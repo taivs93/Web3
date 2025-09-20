@@ -52,4 +52,8 @@ public class GasService {
                 .totalFee(finalGasPrice.multiply(gasLimit).toString())
                 .build();
     }
+
+    public String getGasEstimate(String bsc, Object o) {
+        return bsc;
+    }
 }
