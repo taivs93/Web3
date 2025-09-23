@@ -3,8 +3,8 @@ spring:
     name: web3-backend
   datasource:
     url: jdbc:mysql://localhost:3306/db_web3
-    username: root
-    password: 251202
+    username: user
+    password: Lamnguyen1962@
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     show-sql: false
@@ -66,7 +66,12 @@ telegram:
 coingecko:
   api:
     url: https://api.coingecko.com/api/v3
-    key: # Optional API key for higher rate limits
+    key: CG-oUHtDQkWkh3Q9sk157QEP5qK
+
+bscscan:
+  api:
+    url: https://api.bscscan.com/api
+    key: X4KAZBFGFFM3CJ762QM3M5YF5F5ZMHMQEC
 
 
 network:
@@ -74,10 +79,10 @@ network:
   #   rpc-url: wss://mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
   #   chain-id: 1
   bsc:
-    rpc-url: wss://bnb-testnet.g.alchemy.com/v2/UN7-adHP_ym7EKduai7QA
-    chain-id: 97
-  #    rpc-url: wss://bsc-mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
-  #    chain-id: 56
+#    rpc-url: wss://bnb-testnet.g.alchemy.com/v2/UN7-adHP_ym7EKduai7QA
+#    chain-id: 97
+      rpc-url: wss://bsc-mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
+      chain-id: 56
   # arbitrum:
   #   rpc-url: wss://arbitrum-mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
   #   chain-id: 42161
@@ -95,3 +100,9 @@ app:
   blockchain:
     reconnect-delay: 5000
     max-retry-attempts: 3
+  crawler:
+    batch-size: 100
+    max-blocks-per-run: 1000
+    enabled-networks: BSC
+    crawl-interval: 30000
+    enable-scheduled-crawling: true

@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class FollowService {
+public class FollowService {    // Không có filter phân loại address
 
     private final FollowRepository followRepository;
     private final ChatRepository chatRepository;

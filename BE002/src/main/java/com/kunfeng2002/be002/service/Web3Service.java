@@ -131,7 +131,7 @@ public class Web3Service {
         }
     }
 
-    private boolean verifyWithBouncyCastle(String message, String signature, String address) {
+    private boolean verifyWithBouncyCastle(String message, String signature, String address) throws SignatureException {
         try {
             String prefix = "\u0019Ethereum Signed Message:\n" + message.length();
             String prefixedMessage = prefix + message;
