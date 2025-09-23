@@ -6,6 +6,7 @@ import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.dto.response.FeeResponse;
 import com.kunfeng2002.be002.entity.Chat;
 import com.kunfeng2002.be002.entity.ChatType;
+import com.kunfeng2002.be002.entity.NetworkType;
 import com.kunfeng2002.be002.entity.User;
 import com.kunfeng2002.be002.event.TelegramMessageEvent;
 import com.kunfeng2002.be002.exception.DataNotFoundException;
@@ -215,20 +216,22 @@ public class TelegramBotService {
     public String handleGasCommand(String argument) {
         try {
             String[] parts = argument.split(" ");
-            String network = parts[0];
+            String networkStr = parts[0].toUpperCase();
+            NetworkType network = NetworkType.valueOf(networkStr);
             BigInteger gasLimit = parts.length > 1 ? new BigInteger(parts[1]) : null;
 
             FeeRequest feeRequest = FeeRequest.builder()
                     .gasLimit(gasLimit)
                     .build();
 
-            FeeResponse response = gasService.getFeeEstimate(network, feeRequest);
+            FeeResponse response = gasService.getFeeEstimate(network.name(), feeRequest);
 
             return formatFeeResponse(response);
         } catch (Exception e) {
             return "Invalid format. Use: /gas <network> [gasLimit]";
         }
     }
+
 
     private String formatFeeResponse(FeeResponse res) {
         StringBuilder sb = new StringBuilder();

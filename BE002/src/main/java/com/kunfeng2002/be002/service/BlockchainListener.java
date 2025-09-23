@@ -38,7 +38,6 @@ public class BlockchainListener {
     private final Map<String, Integer> retryCounts = new ConcurrentHashMap<>();
     private final Map<String, Disposable> subscriptions = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
     private final Map<String, AtomicReference<BigInteger>> lastProcessedBlocks = new ConcurrentHashMap<>();
 
     @Value("${app.blockchain.max-retry-attempts:3}")
@@ -50,26 +49,16 @@ public class BlockchainListener {
     public BlockchainListener(
             KafkaTemplate<String, String> kafkaTemplate,
             ObjectMapper objectMapper,
-            @Qualifier("ETH") Web3j ethWeb3,
-            @Qualifier("BSC") Web3j bscWeb3,
-            @Qualifier("ARBITRUM") Web3j arbitrumWeb3,
-            @Qualifier("OPTIMISM") Web3j optimismWeb3,
-            @Qualifier("AVALANCHE") Web3j avalancheWeb3,
+            Map<String, Web3j> web3Clients,
             FollowService followService
     ) {
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
         this.followService = followService;
+        this.web3Clients = web3Clients;
 
-        this.web3Clients = Map.of(
-                "ETH", ethWeb3,
-                "BSC", bscWeb3,
-                "ARBITRUM", arbitrumWeb3,
-                "OPTIMISM", optimismWeb3,
-                "AVALANCHE", avalancheWeb3
-        );
-
-        web3Clients.keySet().forEach(network -> lastProcessedBlocks.put(network, new AtomicReference<>(BigInteger.ZERO)));
+        web3Clients.keySet()
+                .forEach(network -> lastProcessedBlocks.put(network, new AtomicReference<>(BigInteger.ZERO)));
     }
 
     @PostConstruct

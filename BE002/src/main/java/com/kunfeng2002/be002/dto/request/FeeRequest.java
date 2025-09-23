@@ -19,8 +19,8 @@ public class FeeRequest {
     private BigDecimal fastMultiplier = BigDecimal.valueOf(1.5);
 
     @Builder.Default
-    private int blockCount = 5;
+    private Integer blockCount = 5;
     @Builder.Default
-    private double percentile = 25.0;
+    private Double percentile = 25.0;
 }
 

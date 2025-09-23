@@ -117,7 +117,7 @@ public class Bot extends TelegramLongPollingBot {
                     break;
                 case "/gas":
                     response = argument.isEmpty()
-                            ? gasService.getGasEstimate("bsc", null)
+                            ? gasService.getFeeEstimate("bsc", null).toString()
                             : telegramBotService.handleGasCommand(argument);
                     break;
                 case "/help":
