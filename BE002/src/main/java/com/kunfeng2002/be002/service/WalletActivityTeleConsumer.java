@@ -52,7 +52,6 @@ public class WalletActivityTeleConsumer {
 
         for (Follow follow : followers) {
             Long chatId = follow.getChat().getChatId();
-
             if (notifiedChatIds.add(chatId)) {
                 String notificationMessage;
                 if (follow.getWallet().getAddress().equalsIgnoreCase(fromAddress)) {

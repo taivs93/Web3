@@ -40,6 +40,7 @@ public class BlockchainListener {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final Map<String, AtomicReference<BigInteger>> lastProcessedBlocks = new ConcurrentHashMap<>();
 
+
     @Value("${app.blockchain.max-retry-attempts:3}")
     private int maxRetryAttempts;
 
@@ -50,7 +51,7 @@ public class BlockchainListener {
             KafkaTemplate<String, String> kafkaTemplate,
             ObjectMapper objectMapper,
             Map<String, Web3j> web3Clients,
-            FollowService followService
+            FollowService followService, TelegramBotService telegramBotService
     ) {
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
@@ -179,6 +180,7 @@ public class BlockchainListener {
                     .gasPrice(transaction.getGasPrice())
                     .timestamp(System.currentTimeMillis())
                     .build();
+
 
             try {
                 kafkaTemplate.send(
