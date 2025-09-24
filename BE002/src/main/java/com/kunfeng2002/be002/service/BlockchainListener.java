@@ -7,7 +7,6 @@ import com.kunfeng2002.be002.entity.NetworkType;
 import io.reactivex.disposables.Disposable;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -144,15 +143,13 @@ public class BlockchainListener {
             return;
         }
         ethBlock.getBlock().getTransactions().forEach(transactionResult -> {
-            try {
-                Object rawTransaction = transactionResult.get();
-                if (rawTransaction instanceof TransactionObject) {
-                    TransactionObject transaction = (TransactionObject) rawTransaction;
-                    checkAndPublish(network, transaction);
-                } else log.warn("Wrong transaction type");
-            } catch (Exception e) {
-                log.error("Error processing transaction in block {}", ethBlock.getBlock().getNumber(), e);
-            }
+
+            Object rawTransaction = transactionResult.get();
+            if (rawTransaction instanceof TransactionObject) {
+                TransactionObject transaction = (TransactionObject) rawTransaction;
+                checkAndPublish(network, transaction);
+            } else log.warn("Wrong transaction type");
+
         });
     }
 

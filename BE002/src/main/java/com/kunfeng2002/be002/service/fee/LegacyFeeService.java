@@ -41,7 +41,7 @@ public abstract class LegacyFeeService implements FeeService {
                 gasPrice = gasPriceResponse.getGasPrice();
                 log.info("[{}] Raw eth_gasPrice response: {}", networkType, gasPrice);
             } catch (Exception e) {
-                log.warn("[{}] eth_gasPrice không khả dụng, fallback sang eth_feeHistory", networkType);
+                log.warn("[{}] eth_gasPrice invalid, fallback to eth_feeHistory", networkType);
 
                 EthBlock.Block latestBlock = web3.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
                         .send().getBlock();

@@ -1,5 +1,6 @@
 package com.kunfeng2002.be002.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kunfeng2002.be002.dto.request.WalletActivityEvent;
 import com.kunfeng2002.be002.entity.Follow;
@@ -29,12 +30,14 @@ public class WalletActivityTeleConsumer {
     @KafkaListener(topics = "wallet-activity", groupId = "wallet-tele")
     public void consume(String message) {
         log.info("Received wallet activity: {}", message);
+        WalletActivityEvent event = null;
         try {
-            WalletActivityEvent event = objectMapper.readValue(message, WalletActivityEvent.class);
-            this.sendTelegramNotify(event);
-        } catch (Exception e) {
-            log.error("Error processing wallet activity message: {}", message, e);
+            event = objectMapper.readValue(message, WalletActivityEvent.class);
+        } catch (JsonProcessingException e) {
+            log.info("Error parsing JSON");
         }
+        this.sendTelegramNotify(event);
+
     }
 
     private void sendTelegramNotify(WalletActivityEvent event) {

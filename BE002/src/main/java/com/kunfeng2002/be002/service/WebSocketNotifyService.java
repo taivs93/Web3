@@ -1,5 +1,6 @@
 package com.kunfeng2002.be002.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kunfeng2002.be002.dto.request.WalletActivityEvent;
 import lombok.RequiredArgsConstructor;
@@ -30,12 +31,13 @@ public class WebSocketNotifyService {
         List<String> payloads = redisTemplate.opsForList().range(key, 0, -1);
         if (payloads != null) {
             for (String payload : payloads) {
+                WalletActivityEvent event = null;
                 try {
-                    WalletActivityEvent event = objectMapper.readValue(payload, WalletActivityEvent.class);
-                    messagingTemplate.convertAndSendToUser(sessionId, "/queue/wallet-activity", event);
-                } catch (Exception e) {
-                    log.error("Failed to send offline notification to user {} session {}", userId, sessionId, e);
+                    event = objectMapper.readValue(payload, WalletActivityEvent.class);
+                } catch (JsonProcessingException e) {
+                    log.info("Fail to parse JSON for: " + event);
                 }
+                messagingTemplate.convertAndSendToUser(sessionId, "/queue/wallet-activity", event);
             }
 
             redisTemplate.delete(key);
@@ -56,23 +58,19 @@ public class WebSocketNotifyService {
         if (sessions != null && !sessions.isEmpty()) {
 
             for (String sessionId : sessions) {
-                try {
-                    messagingTemplate.convertAndSendToUser(sessionId, "/queue/wallet-activity", event);
-                    log.info("Sent wallet activity to user {} session {}", userId, sessionId);
-                } catch (Exception e) {
-                    log.error("Failed to send wallet activity to user {} session {}", userId, sessionId, e);
-                }
+                messagingTemplate.convertAndSendToUser(sessionId, "/queue/wallet-activity", event);
+                log.info("Sent wallet activity to user {} session {}", userId, sessionId);
             }
         } else {
-
+            String key = "user:notifications:" + userId;
+            String payload = null;
             try {
-                String key = "user:notifications:" + userId;
-                String payload = objectMapper.writeValueAsString(event);
-                redisTemplate.opsForList().rightPush(key, payload);
-                log.info("Saved offline wallet activity for user {}", userId);
-            } catch (Exception e) {
-                log.error("Failed to save offline wallet activity for user {}", userId, e);
+                payload = objectMapper.writeValueAsString(event);
+            } catch (JsonProcessingException e) {
+                log.info("Fail to parse to JSON: {}",payload);
             }
+            redisTemplate.opsForList().rightPush(key, payload);
+            log.info("Saved offline wallet activity for user {}", userId);
         }
     }
 }

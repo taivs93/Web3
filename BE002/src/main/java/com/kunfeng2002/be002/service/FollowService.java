@@ -3,6 +3,7 @@ package com.kunfeng2002.be002.service;
 import com.kunfeng2002.be002.entity.Chat;
 import com.kunfeng2002.be002.entity.Follow;
 import com.kunfeng2002.be002.entity.Wallet;
+import com.kunfeng2002.be002.exception.DataNotFoundException;
 import com.kunfeng2002.be002.repository.ChatRepository;
 import com.kunfeng2002.be002.repository.FollowRepository;
 import com.kunfeng2002.be002.repository.WalletRepository;
@@ -31,7 +32,7 @@ public class FollowService {
     @Transactional
     public void follow(Long chatId, String address) {
         Chat chat = chatRepository.findByChatId(chatId)
-                .orElseThrow(() -> new IllegalStateException("Chat not found"));
+                .orElseThrow(() -> new DataNotFoundException("Chat not found"));
 
         String normalized = address.toLowerCase();
         Wallet wallet = walletRepository.findByAddress(normalized)
@@ -60,10 +61,10 @@ public class FollowService {
     @Transactional
     public void unfollow(Long chatId, String address) {
         Chat chat = chatRepository.findByChatId(chatId)
-                .orElseThrow(() -> new IllegalStateException("Chat not found"));
+                .orElseThrow(() -> new DataNotFoundException("Chat not found"));
 
         Wallet wallet = walletRepository.findByAddress(address.toLowerCase())
-                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+                .orElseThrow(() -> new DataNotFoundException("Wallet not found"));
 
         followRepository.deleteByChatAndWallet(chat, wallet);
         log.info("Chat {} stopped following {}", chatId, wallet.getAddress());

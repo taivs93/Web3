@@ -1,5 +1,6 @@
 package com.kunfeng2002.be002.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kunfeng2002.be002.dto.request.WalletActivityEvent;
 import com.kunfeng2002.be002.entity.Follow;
@@ -28,8 +29,8 @@ public class WalletActivityWebConsumer {
         try {
             WalletActivityEvent event = objectMapper.readValue(message, WalletActivityEvent.class);
             sendWebNotify(event);
-        } catch (Exception e) {
-            log.error("[WebConsumer] Failed to process wallet activity message: {}", message, e);
+        } catch (JsonProcessingException e) {
+            log.error("[WebConsumer] Failed to process wallet activity message: {}", message);
         }
     }
 
@@ -54,14 +55,15 @@ public class WalletActivityWebConsumer {
 
             Long userId = follow.getChat().getUser().getId();
             if (notifiedUserIds.add(userId)) {
+                String key = "user:notifications:" + userId;
+                String payload = null;
                 try {
-                    String key = "user:notifications:" + userId;
-                    String payload = objectMapper.writeValueAsString(event);
-                    redisTemplate.opsForList().rightPush(key, payload);
-                    webSocketNotifyService.notifyUser(userId, event);
-                } catch (Exception e) {
-                    log.error("[WebConsumer] Failed to save/notify wallet activity for user {}", userId, e);
+                    payload = objectMapper.writeValueAsString(event);
+                } catch (JsonProcessingException e) {
+                    log.info("Fail to parse to JSON: {}",payload);
                 }
+                redisTemplate.opsForList().rightPush(key, payload);
+                webSocketNotifyService.notifyUser(userId, event);
             }
         }
     }
