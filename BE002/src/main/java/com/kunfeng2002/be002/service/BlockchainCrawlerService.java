@@ -82,9 +82,13 @@ public class BlockchainCrawlerService {
             log.info("Crawling {} blocks for network {} from block {} to {}", 
                     blocksToCrawl, network, lastCrawledBlock.add(BigInteger.ONE), currentBlock);
 
-            for (BigInteger i = lastCrawledBlock.add(BigInteger.ONE); 
-                 i.compareTo(lastCrawledBlock.add(blocksToCrawl)) <= 0; 
-                 i = i.add(BigInteger.ONE)) {
+//            for (BigInteger i = lastCrawledBlock.add(BigInteger.ONE);
+//                 i.compareTo(lastCrawledBlock.add(blocksToCrawl)) <= 0;
+//                 i = i.add(BigInteger.ONE))
+            for (BigInteger i = currentBlock;
+                 i.compareTo(lastCrawledBlock) > 0;
+                 i = i.subtract(BigInteger.ONE))
+            {
                 
                 try {
                     crawlBlock(network, web3, i);
