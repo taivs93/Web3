@@ -328,13 +328,17 @@ public class TelegramSearchService {
 
     public String getNewTokens(int count) {
         try {
-            log.info("Fetching {} new tokens from BSCScan", count);
+            log.info("Fetching {} new tokens with real-time crawling", count);
             
-            List<Token> newTokens = bscScanService.getNewTokens(count);
+            // Đảm bảo real-time crawling đang chạy
+            bscScanService.ensureRealTimeCrawling();
+            
+            // Sử dụng method mới với real-time crawling
+            List<Token> newTokens = bscScanService.getNewTokensWithRealTime(count);
             
             if (newTokens.isEmpty()) {
-                log.info("No new tokens from BSCScan API, fetching from database");
-                newTokens = bscScanService.getLatestTokensFromDB(count);
+                log.info("No new tokens found, trying fallback to BSCScan API");
+                newTokens = bscScanService.getNewTokens(count);
             }
             
             if (newTokens.isEmpty()) {
@@ -429,3 +433,4 @@ public class TelegramSearchService {
         };
     }
 }
+

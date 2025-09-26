@@ -1,4 +1,4 @@
-package com.kunfeng2002.web3.coincrawler.model;
+package coincrawler.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

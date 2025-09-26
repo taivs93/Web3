@@ -63,15 +63,25 @@ telegram:
     username: taiteasicale_bot
     token: 8493544022:AAEL-OiS659ZDo6z8I4OPSi6uOHzG1OK9PY
 
-coingecko:
-  api:
-    url: https://api.coingecko.com/api/v3
-    key: CG-oUHtDQkWkh3Q9sk157QEP5qK
+# API Configuration
+api:
+  thegraph:
+    token: "eyJhbGciOiJLTVNFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ3NjY0ODAsImp0aSI6IjgwNGY4OWVjLTEyMDMtNDc3Mi05ZmE1LTlhZDE1NTEwZmQxYyIsImlhdCI6MTc1ODc2NjQ4MCwiaXNzIjoiZGZ1c2UuaW8iLCJzdWIiOiIwbmFiaTM3MDI1ZjdmNmZiYmEyZmYiLCJ2IjoyLCJha2kiOiIwOTg5YWZiNjExMWYzMzkyOTA3NDcwNjA3N2VjMTdmNTg3NTBhYzA4ZWJjZDNmYWExZjE1ODBjYTg4N2ZkYmVmIiwidWlkIjoiMG5hYmkzNzAyNWY3ZjZmYmJhMmZmIiwic3Vic3RyZWFtc19wbGFuX3RpZXIiOiJGUkVFIiwiY2ZnIjp7IlNVQlNUUkVBTVNfTUFYX1JFUVVFU1RTIjoiMiIsIlNVQlNUUkVBTVNfUEFSQUxMRUxfSk9CUyI6IjUiLCJTVUJTVFJFQU1TX1BBUkFMTEVMX1dPUktFUlMiOiI1In19.lzRoHd-qO6h8sG_-uCqYQsbd6_zBTjRQF6bWffqqt8MXa7Lxboa28W1QXiZHEO7oiswdcAyduda6zGCO_MWsNw"
+    api-key: "server_59905865e0d2ae9beb83c090a1809b4c"
+    base-url: "https://token-api.thegraph.com"
+    pancakeswap-url: "https://api.thegraph.com/subgraphs/name/pancakeswap/exchange"
 
-bscscan:
-  api:
-    url: https://api.bscscan.com/api
-    key: X4KAZBFGFFM3CJ762QM3M5YF5F5ZMHMQEC
+  coinmarketcap:
+    api-key: "bc17cc89-9246-45a4-8ec1-07865cba8445"
+    base-url: "https://pro-api.coinmarketcap.com/v1"
+
+  bscscan:
+    api-key: "X4KAZBFGFFM3CJ762QM3M5YF5F5ZMHMQEC"
+    base-url: "https://api.bscscan.com/api"
+
+  coingecko:
+    api-key: "CG-oUHtDQkWkh3Q9sk157QEP5qK"
+    base-url: "https://api.coingecko.com/api/v3"
 
 
 network:
@@ -106,3 +116,8 @@ app:
     enabled-networks: BSC
     crawl-interval: 30000
     enable-scheduled-crawling: true
+    realtime:
+      enabled: true
+      interval: 30000
+      max-blocks-per-crawl: 10
+      auto-start: true

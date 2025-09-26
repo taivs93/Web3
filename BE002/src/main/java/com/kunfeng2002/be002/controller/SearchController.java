@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 public class SearchController {
 
     private final SearchService searchService;
+    private final RealTimeCoinCrawlerService realTimeCoinCrawlerService;
+    private final CoinCrawlerBridgeService coinCrawlerBridgeService;
 
     /**
      * Tìm kiếm tổng quát
@@ -171,6 +173,165 @@ public class SearchController {
 
         } catch (Exception e) {
             log.error("Error in token search", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Tìm kiếm token với real-time crawling
+     */
+    @GetMapping("/token/realtime")
+    public ResponseEntity<TokenSearchResponse> searchTokenRealtime(
+            @RequestParam String query,
+            @RequestParam String network,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        try {
+            log.info("Real-time token search request: query={}, network={}, page={}, size={}", 
+                    query, network, page, size);
+
+            // Đảm bảo real-time crawling đang chạy
+            if (!realTimeCoinCrawlerService.isCrawling()) {
+                log.info("Starting real-time crawling for fresh search results");
+                realTimeCoinCrawlerService.startRealTimeCrawling();
+            }
+
+            SearchService.TokenSearchResult result = searchService.searchToken(query, network, page, size);
+
+            TokenSearchResponse response = TokenSearchResponse.builder()
+                    .query(result.getQuery())
+                    .network(result.getNetwork())
+                    .token(TokenSearchResponse.TokenInfo.fromEntity(result.getToken()))
+                    .tokens(result.getTokens().stream()
+                            .map(TokenSearchResponse.TokenInfo::fromEntity)
+                            .collect(Collectors.toList()))
+                    .totalTokens(result.getTotalTokens())
+                    .found(result.isFound())
+                    .build();
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error in real-time token search", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Lấy token mới với real-time crawling
+     */
+    @GetMapping("/newtokens/realtime")
+    public ResponseEntity<List<TokenSearchResponse.TokenInfo>> getNewTokensRealtime(
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            log.info("Getting {} new tokens with real-time crawling", limit);
+
+            // Đảm bảo real-time crawling đang chạy
+            if (!realTimeCoinCrawlerService.isCrawling()) {
+                log.info("Starting real-time crawling for new tokens");
+                realTimeCoinCrawlerService.startRealTimeCrawling();
+            }
+
+            List<Token> newTokens = searchService.getTopTokens("BSC", limit);
+            
+            List<TokenSearchResponse.TokenInfo> tokenInfos = newTokens.stream()
+                    .map(TokenSearchResponse.TokenInfo::fromEntity)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(tokenInfos);
+
+        } catch (Exception e) {
+            log.error("Error getting new tokens with real-time crawling", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Tìm kiếm token với coincrawler integration
+     */
+    @GetMapping("/token/coincrawler")
+    public ResponseEntity<List<TokenSearchResponse.TokenInfo>> searchTokenWithCoincrawler(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "BSC") String network,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            log.info("Coincrawler token search: query={}, network={}, limit={}", 
+                    query, network, limit);
+
+            List<Token> tokens = coinCrawlerBridgeService.searchTokensFromCoincrawler(query, network, limit);
+            
+            List<TokenSearchResponse.TokenInfo> tokenInfos = tokens.stream()
+                    .map(TokenSearchResponse.TokenInfo::fromEntity)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(tokenInfos);
+
+        } catch (Exception e) {
+            log.error("Error in coincrawler token search", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Lấy token mới với coincrawler integration
+     */
+    @GetMapping("/newtokens/coincrawler")
+    public ResponseEntity<List<TokenSearchResponse.TokenInfo>> getNewTokensWithCoincrawler(
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            log.info("Getting new tokens with coincrawler: limit={}", limit);
+
+            List<Token> newTokens = coinCrawlerBridgeService.getNewTokensFromCoincrawler(limit);
+            
+            List<TokenSearchResponse.TokenInfo> tokenInfos = newTokens.stream()
+                    .map(TokenSearchResponse.TokenInfo::fromEntity)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(tokenInfos);
+
+        } catch (Exception e) {
+            log.error("Error getting new tokens with coincrawler", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Lấy top tokens với coincrawler integration
+     */
+    @GetMapping("/toptokens/coincrawler")
+    public ResponseEntity<List<TokenSearchResponse.TokenInfo>> getTopTokensWithCoincrawler(
+            @RequestParam(defaultValue = "BSC") String network,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            log.info("Getting top tokens with coincrawler: network={}, limit={}", network, limit);
+
+            List<Token> topTokens = coinCrawlerBridgeService.getTopTokensFromCoincrawler(network, limit);
+            
+            List<TokenSearchResponse.TokenInfo> tokenInfos = topTokens.stream()
+                    .map(TokenSearchResponse.TokenInfo::fromEntity)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(tokenInfos);
+
+        } catch (Exception e) {
+            log.error("Error getting top tokens with coincrawler", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Lấy thống kê coincrawler
+     */
+    @GetMapping("/coincrawler/stats")
+    public ResponseEntity<CoinCrawlerBridgeService.CoincrawlerStats> getCoincrawlerStats() {
+        try {
+            log.info("Getting coincrawler stats");
+
+            CoinCrawlerBridgeService.CoincrawlerStats stats = coinCrawlerBridgeService.getCoincrawlerStats();
+            return ResponseEntity.ok(stats);
+
+        } catch (Exception e) {
+            log.error("Error getting coincrawler stats", e);
             return ResponseEntity.internalServerError().build();
         }
     }

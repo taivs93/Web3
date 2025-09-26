@@ -75,6 +75,52 @@ export const chatAPI = {
     apiClient.get('/chat/health')
 }
 
+// Gas API
+export const gasAPI = {
+  // Lấy ước tính phí gas cho network
+  getGasEstimate: (network, request = null) => 
+    apiClient.post(`/gas/estimate/${network}`, request),
+  
+  // Lấy ước tính phí gas nhanh với default values
+  getGasEstimateQuick: (network) => 
+    apiClient.get(`/gas/estimate/${network}`)
+}
+
+// Search API
+export const searchAPI = {
+  // Tìm kiếm tổng quát
+  generalSearch: (query, network, page = 0, size = 20) => 
+    apiClient.post('/search/general', { query, network, page, size }),
+  
+  // Tìm kiếm block
+  searchBlock: (query, network) => 
+    apiClient.get('/search/block', { params: { query, network } }),
+  
+  // Tìm kiếm transaction
+  searchTransaction: (query, network) => 
+    apiClient.get('/search/transaction', { params: { query, network } }),
+  
+  // Tìm kiếm address
+  searchAddress: (query, network, page = 0, size = 20) => 
+    apiClient.get('/search/address', { params: { query, network, page, size } }),
+  
+  // Tìm kiếm token
+  searchToken: (query, network, page = 0, size = 20) => 
+    apiClient.get('/search/token', { params: { query, network, page, size } }),
+  
+  // Lấy thống kê network
+  getNetworkStats: (network) => 
+    apiClient.get(`/search/stats/${network}`),
+  
+  // Lấy top tokens
+  getTopTokens: (network, limit = 10) => 
+    apiClient.get('/search/tokens/top', { params: { network, limit } }),
+  
+  // Lấy recent transactions
+  getRecentTransactions: (network, limit = 10) => 
+    apiClient.get('/search/transactions/recent', { params: { network, limit } })
+}
+
 // WebSocket API
 export const websocketAPI = {
   // WebSocket endpoint

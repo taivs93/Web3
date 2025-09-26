@@ -1,4 +1,4 @@
-package com.kunfeng2002.web3.coincrawler.autoconfigure;
+package coincrawler.autoconfigure;
 
 import com.kunfeng2002.web3.coincrawler.config.Web3CoinCrawlerProperties;
 import com.kunfeng2002.web3.coincrawler.controller.Web3CoinCrawlerController;
@@ -6,18 +6,18 @@ import com.kunfeng2002.web3.coincrawler.repository.CoinRepository;
 import com.kunfeng2002.web3.coincrawler.repository.PairRepository;
 import com.kunfeng2002.web3.coincrawler.repository.TokenRepository;
 import com.kunfeng2002.web3.coincrawler.service.Web3CoinCrawlerService;
-import com.kunfeng2002.web3.coincrawler.service.impl.Web3CoinCrawlerServiceImpl;
-import com.kunfeng2002.web3.coincrawler.service.api.TheGraphApiService;
-import com.kunfeng2002.web3.coincrawler.service.api.CoinMarketCapApiService;
-import com.kunfeng2002.web3.coincrawler.service.api.BSCScanApiService;
-import com.kunfeng2002.web3.coincrawler.service.api.CoinGeckoApiService;
-import com.kunfeng2002.web3.coincrawler.service.api.PancakeSwapApiService;
+import com.kunfeng2002.web3.coincrawler.service.api.*;
+import com.kunfeng2002.web3.coincrawler.service.cache.CacheService;
 import com.kunfeng2002.web3.coincrawler.service.crawler.CoinCrawlerService;
 import com.kunfeng2002.web3.coincrawler.service.crawler.PairCrawlerService;
 import com.kunfeng2002.web3.coincrawler.service.crawler.TokenCrawlerService;
-import com.kunfeng2002.web3.coincrawler.service.cache.CacheService;
-import com.kunfeng2002.web3.coincrawler.service.security.SecurityService;
 import com.kunfeng2002.web3.coincrawler.service.export.ExportService;
+import com.kunfeng2002.web3.coincrawler.service.impl.Web3CoinCrawlerServiceImpl;
+import com.kunfeng2002.web3.coincrawler.service.security.SecurityService;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,16 +28,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.apache.hc.core5.util.Timeout;
-
-import java.time.Duration;
 
 @Configuration
 @ConditionalOnClass(Web3CoinCrawlerService.class)

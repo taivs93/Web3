@@ -23,6 +23,7 @@ public class BSCScanService {
 
     private final RestTemplate restTemplate;
     private final TokenRepository tokenRepository;
+    private final RealTimeCoinCrawlerService realTimeCoinCrawlerService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${bscscan.api.url:https://api.bscscan.com/api}")
@@ -178,6 +179,36 @@ public class BSCScanService {
         } catch (Exception e) {
             log.error("Error fetching latest tokens from database", e);
             return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Lấy token mới với real-time crawling
+     */
+    public List<Token> getNewTokensWithRealTime(int count) {
+        try {
+            // Kiểm tra nếu real-time crawling đang chạy
+            if (realTimeCoinCrawlerService.isCrawling()) {
+                log.info("Real-time crawling is active, getting latest tokens from DB");
+                return getLatestTokensFromDB(count);
+            } else {
+                // Fallback về API cũ
+                log.info("Real-time crawling is not active, using BSCScan API");
+                return getNewTokens(count);
+            }
+        } catch (Exception e) {
+            log.error("Error getting new tokens with real-time", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Bắt đầu real-time crawling nếu chưa chạy
+     */
+    public void ensureRealTimeCrawling() {
+        if (!realTimeCoinCrawlerService.isCrawling()) {
+            log.info("Starting real-time crawling to ensure fresh data");
+            realTimeCoinCrawlerService.startRealTimeCrawling();
         }
     }
 

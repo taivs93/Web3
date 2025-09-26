@@ -51,4 +51,10 @@ public interface TokenRepository extends JpaRepository<Token, Long> {
     @Query("SELECT t FROM Token t WHERE t.network = :network AND t.lastPriceUpdate < :cutoffTime")
     List<Token> findTokensNeedingPriceUpdate(@Param("network") String network, 
                                            @Param("cutoffTime") java.time.LocalDateTime cutoffTime);
+
+    List<Token> findByNetworkAndIsActiveTrueOrderByCreatedAtDesc(String network, Pageable pageable);
+    
+    Long countByNetwork(String network);
+    
+    Long countByNetworkAndIsVerifiedTrue(String network);
 }

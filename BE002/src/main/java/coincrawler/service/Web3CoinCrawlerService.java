@@ -1,4 +1,4 @@
-package com.kunfeng2002.web3.coincrawler.service;
+package coincrawler.service;
 
 import com.kunfeng2002.web3.coincrawler.entity.Coin;
 import com.kunfeng2002.web3.coincrawler.entity.Pair;
