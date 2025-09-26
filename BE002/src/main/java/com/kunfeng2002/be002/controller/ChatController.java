@@ -1,7 +1,7 @@
 package com.kunfeng2002.be002.controller;
 
 import com.kunfeng2002.be002.dto.request.LinkAccountRequest;
-import com.kunfeng2002.be002.dto.request.WebCommandRequest;
+import com.kunfeng2002.be002.dto.request.CommandRequest;
 import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.dto.response.ResponseDTO;
 import com.kunfeng2002.be002.service.TelegramBotService;
@@ -18,8 +18,8 @@ public class ChatController {
     private final TelegramBotService telegramBotService;
 
     @PostMapping("/send")
-    public ResponseEntity<ResponseDTO> sendMessage(@Valid @RequestBody WebCommandRequest request) {
-        ChatMessageResponse response = telegramBotService.processWebCommand(request);
+    public ResponseEntity<ResponseDTO> sendMessage(@Valid @RequestBody CommandRequest request) {
+        ChatMessageResponse response = telegramBotService.processCommand(request);
 
         return ResponseEntity.ok(
                 ResponseDTO.builder()

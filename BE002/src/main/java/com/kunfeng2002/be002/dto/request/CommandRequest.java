@@ -11,7 +11,7 @@ import java.math.BigInteger;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class WebCommandRequest {
+public class CommandRequest {
     private String command;
     private String network;
     private BigInteger gasLimit;

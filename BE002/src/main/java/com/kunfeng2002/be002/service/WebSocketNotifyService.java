@@ -3,6 +3,7 @@ package com.kunfeng2002.be002.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kunfeng2002.be002.dto.request.WalletActivityEvent;
+import com.kunfeng2002.be002.dto.response.PriceAlertEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -23,54 +24,44 @@ public class WebSocketNotifyService {
 
     private final Map<Long, Set<String>> userSessions = new ConcurrentHashMap<>();
 
-    public void registerSession(Long userId, String sessionId) {
-        userSessions.computeIfAbsent(userId, k -> new HashSet<>()).add(sessionId);
-        log.info("Registered session {} for user {}", sessionId, userId);
-
-        String key = "user:notifications:" + userId;
-        List<String> payloads = redisTemplate.opsForList().range(key, 0, -1);
-        if (payloads != null) {
-            for (String payload : payloads) {
-                WalletActivityEvent event = null;
-                try {
-                    event = objectMapper.readValue(payload, WalletActivityEvent.class);
-                } catch (JsonProcessingException e) {
-                    log.info("Fail to parse JSON for: " + event);
-                }
-                messagingTemplate.convertAndSendToUser(sessionId, "/queue/wallet-activity", event);
-            }
-
-            redisTemplate.delete(key);
-        }
-    }
-
-    public void unregisterSession(Long userId, String sessionId) {
-        Set<String> sessions = userSessions.get(userId);
-        if (sessions != null) {
-            sessions.remove(sessionId);
-            if (sessions.isEmpty()) userSessions.remove(userId);
-            log.info("Unregistered session {} for user {}", sessionId, userId);
-        }
-    }
-
     public void notifyUser(Long userId, WalletActivityEvent event) {
         Set<String> sessions = userSessions.get(userId);
         if (sessions != null && !sessions.isEmpty()) {
-
             for (String sessionId : sessions) {
                 messagingTemplate.convertAndSendToUser(sessionId, "/queue/wallet-activity", event);
                 log.info("Sent wallet activity to user {} session {}", userId, sessionId);
             }
         } else {
             String key = "user:notifications:" + userId;
-            String payload = null;
             try {
-                payload = objectMapper.writeValueAsString(event);
+                String payload = objectMapper.writeValueAsString(event);
+                redisTemplate.opsForList().rightPush(key, payload);
+                log.info("Saved offline wallet activity for user {}", userId);
             } catch (JsonProcessingException e) {
-                log.info("Fail to parse to JSON: {}",payload);
+                log.warn("Fail to parse to JSON wallet event", e);
             }
-            redisTemplate.opsForList().rightPush(key, payload);
-            log.info("Saved offline wallet activity for user {}", userId);
+        }
+    }
+
+    public void notifyPriceAlert(Long userId, String symbol, double price) {
+        Set<String> sessions = userSessions.get(userId);
+        PriceAlertEvent event = new PriceAlertEvent(symbol.toUpperCase(), price,
+                symbol.toUpperCase() + " Alert! Price reached $" + price);
+
+        if (sessions != null && !sessions.isEmpty()) {
+            for (String sessionId : sessions) {
+                messagingTemplate.convertAndSendToUser(sessionId, "/queue/price-alert", event);
+                log.info("Sent price alert to user {} session {}", userId, sessionId);
+            }
+        } else {
+            String key = "user:price-alerts:" + userId;
+            try {
+                String payload = objectMapper.writeValueAsString(event);
+                redisTemplate.opsForList().rightPush(key, payload);
+                log.info("Saved offline price alert for user {}", userId);
+            } catch (JsonProcessingException e) {
+                log.warn("Fail to parse to JSON price alert", e);
+            }
         }
     }
 }

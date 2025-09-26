@@ -1,7 +1,7 @@
 package com.kunfeng2002.be002.service;
 
 import com.kunfeng2002.be002.dto.request.FeeRequest;
-import com.kunfeng2002.be002.dto.request.WebCommandRequest;
+import com.kunfeng2002.be002.dto.request.CommandRequest;
 import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.dto.response.FeeResponse;
 import com.kunfeng2002.be002.entity.Chat;
@@ -36,9 +36,8 @@ public class TelegramBotService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApplicationEventPublisher eventPublisher;
 
-
     @Transactional
-    public ChatMessageResponse processWebCommand(WebCommandRequest request) {
+    public ChatMessageResponse processCommand(CommandRequest request) {
         String command = request.getCommand() != null ? request.getCommand().trim().toLowerCase() : "";
         String walletAddress = request.getWalletAddress();
         String argument = request.getArgument();
@@ -51,19 +50,16 @@ public class TelegramBotService {
                 .orElseThrow(() -> new DataNotFoundException("User with wallet not found"));
 
         Chat chat = chatRepository.findByUserId(user.getId())
-                .orElseGet(() -> {
-                    Chat newChat = Chat.builder()
-                            .chatType(ChatType.PRIVATE)
-                            .title(user.getUsername() != null ? user.getUsername() : "Web User")
-                            .user(user)
-                            .build();
-                    return chatRepository.save(newChat);
-                });
+                .orElseGet(() -> chatRepository.save(Chat.builder()
+                        .chatType(ChatType.PRIVATE)
+                        .title(user.getUsername() != null ? user.getUsername() : "Web User")
+                        .user(user)
+                        .build()));
 
         return processCommandInternal(command, argument, chat.getChatId());
     }
 
-    public ChatMessageResponse processTelegramCommand(WebCommandRequest request, Long telegramChatId) {
+    public ChatMessageResponse processTelegramCommand(CommandRequest request, Long telegramChatId) {
         String command = request.getCommand() != null ? request.getCommand().trim().toLowerCase() : "";
         String argument = request.getArgument();
         return processCommandInternal(command, argument, telegramChatId);
@@ -103,22 +99,32 @@ public class TelegramBotService {
                 return buildResponse(formatFeeResponse(gasResponse));
 
             case "/setalert":
+                if (argument == null || !argument.contains(" ")) {
+                    return buildResponse("Invalid format. Use: /setalert BTC/ETH 35000");
+                }
                 try {
-                    double alertPrice = Double.parseDouble(argument);
-                    redisTemplate.opsForZSet().add("btc:alerts:" + chatId, String.valueOf(alertPrice), alertPrice);
-                    return buildResponse("Alert set for BTC ≥ $" + alertPrice);
+                    String[] parts = argument.split(" ");
+                    String symbol = parts[0].toUpperCase();
+                    double alertPrice = Double.parseDouble(parts[1]);
+                    redisTemplate.opsForZSet().add(symbol.toLowerCase() + ":alerts:" + chatId, String.valueOf(alertPrice), alertPrice);
+                    return buildResponse("Alert set for " + symbol + " ≥ $" + alertPrice);
                 } catch (NumberFormatException e) {
-                    return buildResponse("Invalid price format. Use: /setalert 35000");
+                    return buildResponse("Invalid price format. Use: /setalert BTC/ETH 35000");
                 }
 
             case "/listalerts":
-                Set<Object> alerts = redisTemplate.opsForZSet().range("btc:alerts:" + chatId, 0, -1);
-                if (alerts == null || alerts.isEmpty()) return buildResponse("No active BTC alerts.");
-                return buildResponse("Your BTC alerts:\n" + alerts);
+                String listKey = "btc:alerts:" + chatId;
+                Set<Object> alerts = redisTemplate.opsForZSet().range(listKey, 0, -1);
+                if (alerts == null || alerts.isEmpty()) return buildResponse("No active alerts.");
+                return buildResponse("Your alerts for BTC:\n" + alerts);
 
             case "/delalert":
-                redisTemplate.opsForZSet().remove("btc:alerts:" + chatId, argument);
-                return buildResponse("Deleted BTC alert: " + argument);
+                String delKey = "btc:alerts:" + chatId;
+                redisTemplate.opsForZSet().remove(delKey, argument);
+                return buildResponse("Deleted alert: " + argument);
+
+            case "/link":
+                return buildResponse(linkUserToTelegram(chatId, argument));
 
             default:
                 return buildResponse("Unknown command.\nType /help to see available commands.");
@@ -136,9 +142,10 @@ public class TelegramBotService {
                 /unfollow <wallet_address> - Unfollow a wallet
                 /list - Show followed wallets
                 /gas <network> [gasLimit] - Show gas estimate
-                /setalert <price> - Set BTC price alert
-                /listalerts - List your BTC alerts
-                /delalert <price> - Delete BTC alert
+                /setalert <symbol> <price> - Set price alert (e.g. /setalert BTC 35000)
+                /listalerts - List your alerts
+                /delalert <price> - Delete alert
+                /link <linking code> - Link tele to web
                 """;
     }
 
@@ -155,32 +162,25 @@ public class TelegramBotService {
     }
 
     @Transactional
-    public String linkUserToTelegram(Long telegramUserId, String linkingCode) {
+    public String linkUserToTelegram(Long chatId, String linkingCode) {
         User user = userRepository.findByTelegramLinkingCode(linkingCode)
                 .orElseThrow(() -> new DataNotFoundException("Invalid or expired linking code."));
 
-        if (user.getTelegramLinkingCodeExpiresAt() != null && user.getTelegramLinkingCodeExpiresAt().isBefore(LocalDateTime.now())) {
+        if (user.getTelegramLinkingCodeExpiresAt() != null
+                && user.getTelegramLinkingCodeExpiresAt().isBefore(LocalDateTime.now())) {
             user.setTelegramLinkingCode(null);
             user.setTelegramLinkingCodeExpiresAt(null);
             userRepository.save(user);
             return "Linking code expired.";
         }
+        if (!linkingCode.equals(user.getTelegramLinkingCode())) return "Linked code not match";
 
-        Chat privateChat = chatRepository.findById(telegramUserId)
-                .orElseGet(() -> Chat.builder()
-                        .chatId(telegramUserId)
-                        .chatType(ChatType.PRIVATE)
-                        .title(user.getUsername() != null ? user.getUsername() : "Unnamed User")
-                        .build());
+        Chat privateChat = chatRepository.findByChatId(chatId)
+                .orElseThrow(() -> new DataNotFoundException("Chat not found."));
+        if (!privateChat.isPrivate()) return "Group chat can not be linked";
 
         privateChat.setUser(user);
-        user.setTelegramUserId(telegramUserId);
-        user.setTelegramLinkingCode(null);
-        user.setTelegramLinkingCodeExpiresAt(null);
-
-        userRepository.save(user);
-        chatRepository.save(privateChat);
-        log.info("User {} linked to Telegram ID {}", user.getId(), telegramUserId);
+        log.info("User {} linked to Telegram ID {}", user.getId(), privateChat.getChatId());
         return "Your Telegram account has been successfully linked!";
     }
 

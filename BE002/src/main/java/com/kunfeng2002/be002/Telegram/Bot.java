@@ -1,6 +1,6 @@
 package com.kunfeng2002.be002.Telegram;
 
-import com.kunfeng2002.be002.dto.request.WebCommandRequest;
+import com.kunfeng2002.be002.dto.request.CommandRequest;
 import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.event.TelegramMessageEvent;
 import com.kunfeng2002.be002.service.TelegramBotService;
@@ -50,7 +50,7 @@ public class Bot extends TelegramLongPollingBot {
 
         log.info("Received message in chat {}: {}", chatId, text);
 
-        WebCommandRequest request = new WebCommandRequest();
+        CommandRequest request = new CommandRequest();
         request.setCommand(text.split(" ")[0]);
         request.setArgument(text.contains(" ") ? text.substring(text.indexOf(" ") + 1).trim() : "");
 

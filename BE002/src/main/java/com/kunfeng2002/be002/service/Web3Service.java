@@ -29,29 +29,6 @@ public class Web3Service {
         this.web3Clients = web3Clients;
     }
 
-    public BigInteger getGasPrice(String network) {
-        Web3j web3 = web3Clients.get(network.toUpperCase());
-        if (web3 == null) {
-            throw new IllegalArgumentException("Unsupported network: " + network);
-        }
-
-        try {
-            EthGasPrice gasPriceResponse = web3.ethGasPrice().send();
-            return gasPriceResponse.getGasPrice();
-        } catch (Exception e) {
-            log.error("Failed to fetch gas price for network {}", network, e);
-            throw new RuntimeException("Unable to fetch gas price from " + network, e);
-        }
-    }
-
-    public Web3j getWeb3(String network) {
-        Web3j web3 = web3Clients.get(network.toUpperCase());
-        if (web3 == null) {
-            throw new IllegalArgumentException("Unsupported network: " + network);
-        }
-        return web3;
-    }
-
     public boolean verifySignature(String message, String signature, String address) throws SignatureException {
         try {
             System.out.println("=== Web3Service verifySignature ===");
@@ -88,46 +65,6 @@ public class Web3Service {
             System.out.println("Exception: " + e.getMessage());
             e.printStackTrace();
             throw new SignatureException("Signature verification failed: " + e.getMessage());
-        }
-    }
-
-    private boolean verifyWithWeb3j(String message, String signature, String address) throws SignatureException {
-        try {
-            String prefix = "\u0019Ethereum Signed Message:\n" + message.length();
-            String prefixedMessage = prefix + message;
-
-            byte[] messageHash = Hash.sha3(prefixedMessage.getBytes(StandardCharsets.UTF_8));
-
-            byte[] signatureBytes = Numeric.hexStringToByteArray(signature);
-            if (signatureBytes.length != 65) {
-                throw new SignatureException("Invalid signature bytes length: " + signatureBytes.length);
-            }
-            byte[] r = new byte[32];
-            byte[] s = new byte[32];
-            System.arraycopy(signatureBytes, 0, r, 0, 32);
-            System.arraycopy(signatureBytes, 32, s, 0, 32);
-
-            int v = signatureBytes[64] & 0xFF;
-            int recoveryId = v >= 27 ? v - 27 : v;
-
-            for (int i = 0; i <= 3; i++) {
-                try {
-                    Sign.SignatureData sigData = new Sign.SignatureData((byte) (i % 2), r, s);
-                    BigInteger publicKey = Sign.signedMessageToKey(messageHash, sigData);
-                    String recoveredAddress = "0x" + Keys.getAddress(publicKey);
-                    
-                    if (recoveredAddress.equalsIgnoreCase(address)) {
-                        return true;
-                    }
-                } catch (Exception e) {
-                    System.out.println("Web3j recoveryId " + i + " failed: " + e.getMessage());
-                }
-            }
-            
-            return false;
-        } catch (Exception e) {
-            System.out.println("Web3j verification failed: " + e.getMessage());
-            return false;
         }
     }
 
