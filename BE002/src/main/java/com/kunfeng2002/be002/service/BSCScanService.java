@@ -2,7 +2,7 @@ package com.kunfeng2002.be002.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kunfeng2002.be002.entity.Token;
+import com.kunfeng2002.be002.entity.NoLombokToken;
 import com.kunfeng2002.be002.repository.TokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,10 +35,10 @@ public class BSCScanService {
     private static final String BSC_MAINNET = "BSC";
     private static final String BSCSCAN_GET_TOKEN_LIST_URL = "?module=token&action=getTokenList&page=1&offset={offset}&sort=timestamp&order=desc";
 
-    public List<Token> getNewTokens(int count) {
+    public List<NoLombokToken> getNewTokens(int count) {
         try {
             log.info("Fetching {} new tokens from BSCScan", count);
-            
+
             String url = bscScanApiUrl + BSCSCAN_GET_TOKEN_LIST_URL;
             if (!bscScanApiKey.isEmpty()) {
                 url += "&apikey=" + bscScanApiKey;
@@ -62,12 +62,12 @@ public class BSCScanService {
                 return new ArrayList<>();
             }
 
-            List<Token> newTokens = new ArrayList<>();
+            List<NoLombokToken> newTokens = new ArrayList<>();
             for (JsonNode tokenNode : result) {
                 try {
-                    Token token = parseTokenFromBSCScan(tokenNode);
+                    NoLombokToken token = parseTokenFromBSCScan(tokenNode);
                     if (token != null) {
-                        if (!tokenRepository.findByTokenAddressAndNetwork(token.getTokenAddress(), BSC_MAINNET).isPresent()) {
+                        if (!tokenRepository.findByAddressAndNetwork(token.getAddress(), BSC_MAINNET).isPresent()) {
                             newTokens.add(token);
                             if (newTokens.size() >= count) {
                                 break;
@@ -92,7 +92,7 @@ public class BSCScanService {
         }
     }
 
-    private Token parseTokenFromBSCScan(JsonNode tokenNode) {
+    private NoLombokToken parseTokenFromBSCScan(JsonNode tokenNode) {
         try {
             String contractAddress = tokenNode.get("contractAddress").asText();
             String name = tokenNode.get("tokenName").asText();
@@ -100,24 +100,18 @@ public class BSCScanService {
             int decimals = tokenNode.get("divisor").asInt();
 
             TokenInfo tokenInfo = getTokenInfo(contractAddress);
-            
-            return Token.builder()
-                    .tokenAddress(contractAddress)
-                    .name(name)
-                    .symbol(symbol)
-                    .decimals(decimals)
-                    .network(BSC_MAINNET)
-                    .isVerified(true)
-                    .isActive(true)
-                    .totalSupply(tokenInfo != null ? tokenInfo.totalSupply : null)
-                    .marketCap(tokenInfo != null ? tokenInfo.marketCap : null)
-                    .priceUsd(tokenInfo != null ? tokenInfo.priceUsd : null)
-                    .volume24h(tokenInfo != null ? tokenInfo.volume24h : null)
-                    .priceChange24h(tokenInfo != null ? tokenInfo.priceChange24h : null)
-                    .lastPriceUpdate(LocalDateTime.now())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+
+            NoLombokToken token = new NoLombokToken(contractAddress, name, symbol);
+            token.setDecimals(decimals);
+            token.setIsVerified(true);
+            token.setTotalSupply(tokenInfo != null ? new BigDecimal(tokenInfo.totalSupply) : null);
+            token.setMarketCapUsd(tokenInfo != null ? new BigDecimal(tokenInfo.marketCap) : null);
+            token.setPriceUsd(tokenInfo != null ? new BigDecimal(tokenInfo.priceUsd) : null);
+            token.setVolume24hUsd(tokenInfo != null ? new BigDecimal(tokenInfo.volume24h) : null);
+            token.setPriceChange24h(tokenInfo != null ? new BigDecimal(tokenInfo.priceChange24h) : null);
+            token.setCreatedAtTimestamp(System.currentTimeMillis() / 1000);
+            token.setLastSyncedAt(LocalDateTime.now());
+            return token;
 
         } catch (Exception e) {
             log.error("Error parsing token from BSCScan response", e);
@@ -133,7 +127,9 @@ public class BSCScanService {
             }
 
             String response = restTemplate.getForObject(url, String.class);
-            if (response == null) return null;
+            if (response == null) {
+                return null;
+            }
 
             JsonNode jsonResponse = objectMapper.readTree(response);
             if (!jsonResponse.get("status").asText().equals("1")) {
@@ -170,10 +166,10 @@ public class BSCScanService {
         }
     }
 
-    public List<Token> getLatestTokensFromDB(int count) {
+    public List<NoLombokToken> getLatestTokensFromDB(int count) {
         try {
-            return tokenRepository.findByNetworkAndIsActiveTrueOrderByMarketCapDesc(
-                    BSC_MAINNET, 
+            return tokenRepository.findByNetworkAndIsActiveTrueOrderByMarketCapUsdDesc(
+                    BSC_MAINNET,
                     org.springframework.data.domain.PageRequest.of(0, count)
             );
         } catch (Exception e) {
@@ -185,7 +181,7 @@ public class BSCScanService {
     /**
      * Lấy token mới với real-time crawling
      */
-    public List<Token> getNewTokensWithRealTime(int count) {
+    public List<NoLombokToken> getNewTokensWithRealTime(int count) {
         try {
             // Kiểm tra nếu real-time crawling đang chạy
             if (realTimeCoinCrawlerService.isCrawling()) {
@@ -213,10 +209,11 @@ public class BSCScanService {
     }
 
     private static class TokenInfo {
+
         BigInteger totalSupply;
         BigInteger marketCap;
         BigInteger priceUsd;
         BigInteger volume24h;
-        BigDecimal priceChange24h;
+        BigInteger priceChange24h;
     }
 }

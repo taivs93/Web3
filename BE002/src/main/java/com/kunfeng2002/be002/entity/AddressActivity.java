@@ -66,6 +66,7 @@ public class AddressActivity {
     private BigInteger gasPrice;
 
     @Column(name = "is_contract", nullable = false)
+    @Builder.Default
     private Boolean isContract = false;
 
     @Column(name = "contract_name", length = 100)

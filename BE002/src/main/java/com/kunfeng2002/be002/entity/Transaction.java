@@ -75,6 +75,7 @@ public class Transaction {
     private Integer transactionIndex;
 
     @Column(name = "is_contract_creation")
+    @Builder.Default
     private Boolean isContractCreation = false;
 
     @Column(name = "contract_address", length = 42)

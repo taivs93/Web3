@@ -1,4 +1,4 @@
-package coincrawler.entity;
+package com.kunfeng2002.be002.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 
 @Entity
@@ -46,34 +46,34 @@ public class Pair {
     private Coin token1;
     
     @Column(name = "reserve0", precision = 36, scale = 18)
-    private BigDecimal reserve0;
+    private BigInteger reserve0;
     
     @Column(name = "reserve1", precision = 36, scale = 18)
-    private BigDecimal reserve1;
+    private BigInteger reserve1;
     
     @Column(name = "total_supply", precision = 36, scale = 18)
-    private BigDecimal totalSupply;
+    private BigInteger totalSupply;
     
     @Column(name = "price_usd", precision = 36, scale = 18)
-    private BigDecimal priceUsd;
+    private BigInteger priceUsd;
     
     @Column(name = "price_change_24h", precision = 36, scale = 18)
-    private BigDecimal priceChange24h;
+    private BigInteger priceChange24h;
     
     @Column(name = "price_change_percentage_24h", precision = 36, scale = 18)
-    private BigDecimal priceChangePercentage24h;
+    private BigInteger priceChangePercentage24h;
     
     @Column(name = "volume_usd", precision = 36, scale = 18)
-    private BigDecimal volumeUsd;
+    private BigInteger volumeUsd;
     
     @Column(name = "volume_usd_24h", precision = 36, scale = 18)
-    private BigDecimal volumeUsd24h;
+    private BigInteger volumeUsd24h;
     
     @Column(name = "liquidity_usd", precision = 36, scale = 18)
-    private BigDecimal liquidityUsd;
+    private BigInteger liquidityUsd;
     
     @Column(name = "fees_24h", precision = 36, scale = 18)
-    private BigDecimal fees24h;
+    private BigInteger fees24h;
     
     @Column(name = "tx_count_24h")
     private Long txCount24h;
@@ -85,12 +85,15 @@ public class Pair {
     private Long createdAtTimestamp;
     
     @Column(name = "is_verified")
+    @Builder.Default
     private Boolean isVerified = false;
     
     @Column(name = "is_stable")
+    @Builder.Default
     private Boolean isStable = false;
     
     @Column(name = "is_scam")
+    @Builder.Default
     private Boolean isScam = false;
     
     @Column(name = "dex_name", length = 100)
@@ -126,7 +129,7 @@ public class Pair {
     }
     
     public boolean isTrending() {
-        return volumeUsd24h != null && volumeUsd24h.compareTo(BigDecimal.valueOf(1000000)) > 0;
+        return volumeUsd24h != null && volumeUsd24h.compareTo(BigInteger.valueOf(1000000)) > 0;
     }
     
     public boolean involvesStablecoin() {

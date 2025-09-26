@@ -1,6 +1,6 @@
 package com.kunfeng2002.be002.repository;
 
-import com.kunfeng2002.be002.entity.Token;
+import com.kunfeng2002.be002.entity.NoLombokToken;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,47 +12,53 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface TokenRepository extends JpaRepository<Token, Long> {
+public interface TokenRepository extends JpaRepository<NoLombokToken, Long> {
 
-    Optional<Token> findByTokenAddressAndNetwork(String tokenAddress, String network);
+    Optional<NoLombokToken> findByAddressAndNetwork(String address, String network);
+    
+    // Method này đã được đổi tên để khớp với property 'address' trong entity
+    // Optional<NoLombokToken> findByTokenAddressAndNetwork(String address, String network);
 
-    List<Token> findByNetworkAndIsActiveTrueOrderByMarketCapDesc(String network, Pageable pageable);
+    List<NoLombokToken> findByNetworkAndIsActiveTrueOrderByMarketCapUsdDesc(String network, Pageable pageable);
+    
+    // Method này đã được đổi tên để khớp với property 'marketCapUsd' trong entity
+    // List<NoLombokToken> findByNetworkAndIsActiveTrueOrderByMarketCapDesc(String network, Pageable pageable);
 
-    List<Token> findBySymbolIgnoreCaseAndNetwork(String symbol, String network);
+    List<NoLombokToken> findBySymbolIgnoreCaseAndNetwork(String symbol, String network);
 
-    List<Token> findByNameContainingIgnoreCaseAndNetwork(String name, String network, Pageable pageable);
+    List<NoLombokToken> findByNameContainingIgnoreCaseAndNetwork(String name, String network, Pageable pageable);
 
-    List<Token> findBySymbolContainingIgnoreCaseAndNetwork(String symbol, String network, Pageable pageable);
+    List<NoLombokToken> findBySymbolContainingIgnoreCaseAndNetwork(String symbol, String network, Pageable pageable);
 
-    @Query("SELECT t FROM Token t WHERE t.network = :network AND t.isVerified = true ORDER BY t.marketCap DESC NULLS LAST")
-    List<Token> findVerifiedTokensByNetwork(@Param("network") String network, Pageable pageable);
+    @Query("SELECT t FROM NoLombokToken t WHERE t.network = :network AND t.isVerified = true ORDER BY t.marketCapUsd DESC NULLS LAST")
+    List<NoLombokToken> findVerifiedTokensByNetwork(@Param("network") String network, Pageable pageable);
 
-    @Query("SELECT t FROM Token t WHERE t.network = :network AND (t.name LIKE %:query% OR t.symbol LIKE %:query% OR t.tokenAddress LIKE %:query%)")
-    Page<Token> searchTokens(@Param("network") String network, @Param("query") String query, Pageable pageable);
+    @Query("SELECT t FROM NoLombokToken t WHERE t.network = :network AND (t.name LIKE %:query% OR t.symbol LIKE %:query% OR t.address LIKE %:query%)")
+    Page<NoLombokToken> searchTokens(@Param("network") String network, @Param("query") String query, Pageable pageable);
 
-    @Query("SELECT t FROM Token t WHERE t.network = :network AND t.marketCap >= :minMarketCap ORDER BY t.marketCap DESC")
-    List<Token> findByMarketCapGreaterThan(@Param("network") String network, 
-                                         @Param("minMarketCap") Long minMarketCap, 
+    @Query("SELECT t FROM NoLombokToken t WHERE t.network = :network AND t.marketCapUsd >= :minMarketCap ORDER BY t.marketCapUsd DESC")
+    List<NoLombokToken> findByMarketCapGreaterThan(@Param("network") String network, 
+                                         @Param("minMarketCap") java.math.BigDecimal minMarketCap, 
                                          Pageable pageable);
 
-    @Query("SELECT t FROM Token t WHERE t.network = :network AND t.priceChange24h >= :minChange ORDER BY t.priceChange24h DESC")
-    List<Token> findTopGainers(@Param("network") String network, 
-                              @Param("minChange") Double minChange, 
+    @Query("SELECT t FROM NoLombokToken t WHERE t.network = :network AND t.priceChange24h >= :minChange ORDER BY t.priceChange24h DESC")
+    List<NoLombokToken> findTopGainers(@Param("network") String network, 
+                              @Param("minChange") java.math.BigDecimal minChange, 
                               Pageable pageable);
 
-    @Query("SELECT t FROM Token t WHERE t.network = :network AND t.priceChange24h <= :maxChange ORDER BY t.priceChange24h ASC")
-    List<Token> findTopLosers(@Param("network") String network, 
-                             @Param("maxChange") Double maxChange, 
+    @Query("SELECT t FROM NoLombokToken t WHERE t.network = :network AND t.priceChange24h <= :maxChange ORDER BY t.priceChange24h ASC")
+    List<NoLombokToken> findTopLosers(@Param("network") String network, 
+                             @Param("maxChange") java.math.BigDecimal maxChange, 
                              Pageable pageable);
 
-    @Query("SELECT COUNT(t) FROM Token t WHERE t.network = :network AND t.isActive = true")
+    @Query("SELECT COUNT(t) FROM NoLombokToken t WHERE t.network = :network AND t.isActive = true")
     Long countActiveTokensByNetwork(@Param("network") String network);
 
-    @Query("SELECT t FROM Token t WHERE t.network = :network AND t.lastPriceUpdate < :cutoffTime")
-    List<Token> findTokensNeedingPriceUpdate(@Param("network") String network, 
+    @Query("SELECT t FROM NoLombokToken t WHERE t.network = :network AND t.lastPriceUpdate < :cutoffTime")
+    List<NoLombokToken> findTokensNeedingPriceUpdate(@Param("network") String network, 
                                            @Param("cutoffTime") java.time.LocalDateTime cutoffTime);
 
-    List<Token> findByNetworkAndIsActiveTrueOrderByCreatedAtDesc(String network, Pageable pageable);
+    List<NoLombokToken> findByNetworkAndIsActiveTrueOrderByCreatedAtDesc(String network, Pageable pageable);
     
     Long countByNetwork(String network);
     

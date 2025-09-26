@@ -1,6 +1,6 @@
 package com.kunfeng2002.be002.service;
 
-import com.kunfeng2002.be002.entity.Token;
+import com.kunfeng2002.be002.entity.NoLombokToken;
 import com.kunfeng2002.be002.repository.TokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ public class CoinCrawlerBridgeService {
     /**
      * Lấy token mới từ coincrawler và đồng bộ với database chính
      */
-    public List<Token> getNewTokensFromCoincrawler(int limit) {
+    public List<NoLombokToken> getNewTokensFromCoincrawler(int limit) {
         try {
             log.info("Getting new tokens from coincrawler with limit: {}", limit);
             
@@ -48,7 +48,7 @@ public class CoinCrawlerBridgeService {
     /**
      * Tìm kiếm token với coincrawler
      */
-    public List<Token> searchTokensFromCoincrawler(String query, String network, int limit) {
+    public List<NoLombokToken> searchTokensFromCoincrawler(String query, String network, int limit) {
         try {
             log.info("Searching tokens from coincrawler: query={}, network={}, limit={}", 
                     query, network, limit);
@@ -62,7 +62,7 @@ public class CoinCrawlerBridgeService {
             // Tìm kiếm trong database
             if (query.startsWith("0x") && query.length() == 42) {
                 // Tìm theo address
-                Optional<Token> token = tokenRepository.findByTokenAddressAndNetwork(query, network);
+                Optional<NoLombokToken> token = tokenRepository.findByAddressAndNetwork(query, network);
                 return token.map(List::of).orElse(List.of());
             } else {
                 // Tìm theo symbol hoặc name
@@ -81,7 +81,7 @@ public class CoinCrawlerBridgeService {
     /**
      * Lấy top tokens từ coincrawler
      */
-    public List<Token> getTopTokensFromCoincrawler(String network, int limit) {
+    public List<NoLombokToken> getTopTokensFromCoincrawler(String network, int limit) {
         try {
             log.info("Getting top tokens from coincrawler: network={}, limit={}", network, limit);
             
@@ -91,7 +91,7 @@ public class CoinCrawlerBridgeService {
                 realTimeCoinCrawlerService.startRealTimeCrawling();
             }
             
-            return tokenRepository.findByNetworkAndIsActiveTrueOrderByMarketCapDesc(
+            return tokenRepository.findByNetworkAndIsActiveTrueOrderByMarketCapUsdDesc(
                 network, 
                 org.springframework.data.domain.PageRequest.of(0, limit)
             );
@@ -113,37 +113,54 @@ public class CoinCrawlerBridgeService {
             long activeTokens = tokenRepository.countActiveTokensByNetwork("BSC");
             long verifiedTokens = tokenRepository.countByNetworkAndIsVerifiedTrue("BSC");
             
-            return CoincrawlerStats.builder()
-                .isCrawling(crawlStats.isRunning())
-                .lastProcessedBlock(crawlStats.getLastProcessedBlock())
-                .totalNewTokens(crawlStats.getTotalNewTokens())
-                .totalTokens(totalTokens)
-                .activeTokens(activeTokens)
-                .verifiedTokens(verifiedTokens)
-                .build();
+            return new CoincrawlerStats(
+                crawlStats.isRunning(),
+                crawlStats.getLastProcessedBlock(),
+                crawlStats.getTotalNewTokens(),
+                totalTokens,
+                activeTokens,
+                verifiedTokens
+            );
                 
         } catch (Exception e) {
             log.error("Error getting coincrawler stats", e);
-            return CoincrawlerStats.builder()
-                .isCrawling(false)
-                .totalTokens(0)
-                .activeTokens(0)
-                .verifiedTokens(0)
-                .build();
+            return new CoincrawlerStats(
+                false,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L
+            );
         }
     }
 
     /**
      * Lớp thống kê coincrawler
      */
-    @lombok.Data
-    @lombok.Builder
     public static class CoincrawlerStats {
-        private boolean isCrawling;
-        private long lastProcessedBlock;
-        private long totalNewTokens;
-        private long totalTokens;
-        private long activeTokens;
-        private long verifiedTokens;
+        private final boolean isCrawling;
+        private final long lastProcessedBlock;
+        private final long totalNewTokens;
+        private final long totalTokens;
+        private final long activeTokens;
+        private final long verifiedTokens;
+        
+        public CoincrawlerStats(boolean isCrawling, long lastProcessedBlock, long totalNewTokens, 
+                               long totalTokens, long activeTokens, long verifiedTokens) {
+            this.isCrawling = isCrawling;
+            this.lastProcessedBlock = lastProcessedBlock;
+            this.totalNewTokens = totalNewTokens;
+            this.totalTokens = totalTokens;
+            this.activeTokens = activeTokens;
+            this.verifiedTokens = verifiedTokens;
+        }
+        
+        public boolean isCrawling() { return isCrawling; }
+        public long getLastProcessedBlock() { return lastProcessedBlock; }
+        public long getTotalNewTokens() { return totalNewTokens; }
+        public long getTotalTokens() { return totalTokens; }
+        public long getActiveTokens() { return activeTokens; }
+        public long getVerifiedTokens() { return verifiedTokens; }
     }
 }

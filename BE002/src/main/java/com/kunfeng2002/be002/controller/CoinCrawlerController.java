@@ -17,9 +17,6 @@ public class CoinCrawlerController {
 
     private final RealTimeCoinCrawlerService realTimeCoinCrawlerService;
 
-    /**
-     * Bắt đầu cào coin real-time
-     */
     @PostMapping("/start")
     public ResponseEntity<Map<String, Object>> startCrawling() {
         try {
@@ -40,9 +37,6 @@ public class CoinCrawlerController {
         }
     }
 
-    /**
-     * Dừng cào coin real-time
-     */
     @PostMapping("/stop")
     public ResponseEntity<Map<String, Object>> stopCrawling() {
         try {
@@ -63,9 +57,6 @@ public class CoinCrawlerController {
         }
     }
 
-    /**
-     * Lấy trạng thái cào
-     */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getStatus() {
         try {
@@ -86,9 +77,6 @@ public class CoinCrawlerController {
         }
     }
 
-    /**
-     * Cào token mới ngay lập tức (manual trigger)
-     */
     @PostMapping("/crawl-now")
     public ResponseEntity<Map<String, Object>> crawlNow() {
         try {

@@ -1,6 +1,11 @@
 package com.kunfeng2002.be002.config;
 
-import lombok.extern.slf4j.Slf4j;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -11,13 +16,10 @@ import org.web3j.protocol.http.HttpService;
 import org.web3j.protocol.websocket.WebSocketClient;
 import org.web3j.protocol.websocket.WebSocketService;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
 @Configuration
-@Slf4j
 public class Web3Config {
+
+    private static final Logger log = LoggerFactory.getLogger(Web3Config.class);
 
     // @Value("${network.ethereum.rpc-url}")
     // private String ethereumRpc;

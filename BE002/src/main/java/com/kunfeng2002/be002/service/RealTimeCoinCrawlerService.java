@@ -2,7 +2,7 @@ package com.kunfeng2002.be002.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kunfeng2002.be002.entity.Token;
+import com.kunfeng2002.be002.entity.NoLombokToken;
 import com.kunfeng2002.be002.repository.TokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -49,9 +50,6 @@ public class RealTimeCoinCrawlerService {
     private static final String BSCSCAN_GET_BLOCK_BY_NUMBER_URL = "?module=proxy&action=eth_getBlockByNumber&tag={blockNumber}&boolean=true";
     private static final String BSCSCAN_GET_TOKEN_INFO_URL = "?module=token&action=tokeninfo&contractaddress={address}";
     
-    /**
-     * Bắt đầu cào coin real-time
-     */
     public void startRealTimeCrawling() {
         if (isRunning.compareAndSet(false, true)) {
             log.info("Starting real-time coin crawling...");
@@ -62,9 +60,6 @@ public class RealTimeCoinCrawlerService {
         }
     }
     
-    /**
-     * Dừng cào coin real-time
-     */
     public void stopRealTimeCrawling() {
         if (isRunning.compareAndSet(true, false)) {
             log.info("Stopping real-time coin crawling...");
@@ -73,16 +68,10 @@ public class RealTimeCoinCrawlerService {
         }
     }
     
-    /**
-     * Kiểm tra trạng thái cào
-     */
     public boolean isCrawling() {
         return isRunning.get();
     }
     
-    /**
-     * Lấy thống kê cào
-     */
     public CrawlStats getCrawlStats() {
         return new CrawlStats(
                 isRunning.get(),
@@ -91,9 +80,6 @@ public class RealTimeCoinCrawlerService {
         );
     }
     
-    /**
-     * Khởi tạo block cuối cùng đã xử lý
-     */
     private void initializeLastProcessedBlock() {
         try {
             String url = bscScanApiUrl + BSCSCAN_GET_LATEST_BLOCK_URL;
@@ -116,9 +102,6 @@ public class RealTimeCoinCrawlerService {
         }
     }
     
-    /**
-     * Cào token mới bất đồng bộ
-     */
     @Async
     public void crawlNewTokensAsync() {
         while (isRunning.get()) {
@@ -140,20 +123,14 @@ public class RealTimeCoinCrawlerService {
         log.info("Real-time crawling stopped");
     }
     
-    /**
-     * Cào token mới từ các block mới
-     */
     private void crawlNewTokensFromBlocks() {
         try {
-            // Lấy block hiện tại
             long currentBlock = getCurrentBlockNumber();
             if (currentBlock <= lastProcessedBlock.get()) {
-                return; // Không có block mới
+                return;
             }
             
             log.info("Processing blocks from {} to {}", lastProcessedBlock.get() + 1, currentBlock);
-            
-            // Xử lý từng block mới
             for (long blockNum = lastProcessedBlock.get() + 1; blockNum <= currentBlock; blockNum++) {
                 if (!isRunning.get()) {
                     break;
@@ -168,9 +145,6 @@ public class RealTimeCoinCrawlerService {
         }
     }
     
-    /**
-     * Lấy số block hiện tại
-     */
     private long getCurrentBlockNumber() {
         try {
             String url = bscScanApiUrl + BSCSCAN_GET_LATEST_BLOCK_URL;
@@ -192,9 +166,6 @@ public class RealTimeCoinCrawlerService {
         return lastProcessedBlock.get();
     }
     
-    /**
-     * Xử lý một block cụ thể
-     */
     private void processBlock(long blockNumber) {
         try {
             String blockHex = "0x" + Long.toHexString(blockNumber);
@@ -223,30 +194,27 @@ public class RealTimeCoinCrawlerService {
                 return;
             }
             
-            List<Token> newTokens = new ArrayList<>();
+            List<NoLombokToken> newTokens = new ArrayList<>();
             
-            // Tìm các transaction tạo contract mới
             for (JsonNode tx : transactions) {
                 if (!isRunning.get()) {
                     break;
                 }
                 
-                // Kiểm tra nếu là contract creation
                 if (tx.has("to") && tx.get("to").isNull() && 
                     tx.has("contractAddress") && !tx.get("contractAddress").isNull()) {
                     
                     String contractAddress = tx.get("contractAddress").asText();
-                    Token token = createTokenFromContract(contractAddress, blockNumber);
+                    NoLombokToken token = createTokenFromContract(contractAddress, blockNumber);
                     
-                    if (token != null && !tokenRepository.findByTokenAddressAndNetwork(contractAddress, BSC_MAINNET).isPresent()) {
+                    if (token != null && !tokenRepository.findByAddressAndNetwork(contractAddress, BSC_MAINNET).isPresent()) {
                         newTokens.add(token);
                         totalNewTokens.incrementAndGet();
-                        log.info("Found new token: {} at address {}", token.getName(), contractAddress);
+                        log.info("Found new token at address {}", contractAddress);
                     }
                 }
             }
             
-            // Lưu token mới vào database
             if (!newTokens.isEmpty()) {
                 tokenRepository.saveAll(newTokens);
                 log.info("Saved {} new tokens from block {}", newTokens.size(), blockNumber);
@@ -257,12 +225,8 @@ public class RealTimeCoinCrawlerService {
         }
     }
     
-    /**
-     * Tạo token từ contract address
-     */
-    private Token createTokenFromContract(String contractAddress, long blockNumber) {
+    private NoLombokToken createTokenFromContract(String contractAddress, long blockNumber) {
         try {
-            // Lấy thông tin token từ BSCScan
             String url = bscScanApiUrl + BSCSCAN_GET_TOKEN_INFO_URL;
             if (!bscScanApiKey.isEmpty()) {
                 url += "&apikey=" + bscScanApiKey;
@@ -289,23 +253,16 @@ public class RealTimeCoinCrawlerService {
             String symbol = tokenData.get("symbol").asText();
             int decimals = tokenData.get("divisor").asInt();
             
-            // Tạo token mới
-            Token token = Token.builder()
-                    .tokenAddress(contractAddress)
-                    .name(name)
-                    .symbol(symbol)
-                    .decimals(decimals)
-                    .network(BSC_MAINNET)
-                    .isVerified(true)
-                    .isActive(true)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+            NoLombokToken token = new NoLombokToken(contractAddress, name, symbol);
+            token.setDecimals(decimals);
+            token.setIsVerified(true);
+            token.setCreatedAtTimestamp(System.currentTimeMillis() / 1000);
+            token.setLastSyncedAt(LocalDateTime.now());
             
-            // Cập nhật thông tin bổ sung nếu có
             if (tokenData.has("totalSupply") && !tokenData.get("totalSupply").asText().isEmpty()) {
                 try {
-                    token.setTotalSupply(new BigInteger(tokenData.get("totalSupply").asText()));
+                    BigInteger totalSupply = new BigInteger(tokenData.get("totalSupply").asText());
+                    token.setTotalSupply(new BigDecimal(totalSupply));
                 } catch (NumberFormatException e) {
                     log.debug("Invalid total supply format for token {}", contractAddress);
                 }
@@ -319,9 +276,6 @@ public class RealTimeCoinCrawlerService {
         }
     }
     
-    /**
-     * Scheduled task để cào token mới mỗi 30 giây
-     */
     @Scheduled(fixedDelayString = "${crawler.realtime.interval:30000}")
     public void scheduledCrawl() {
         if (realtimeEnabled && !isRunning.get()) {
@@ -329,9 +283,6 @@ public class RealTimeCoinCrawlerService {
         }
     }
     
-    /**
-     * Lớp thống kê cào
-     */
     public static class CrawlStats {
         private final boolean isRunning;
         private final long lastProcessedBlock;

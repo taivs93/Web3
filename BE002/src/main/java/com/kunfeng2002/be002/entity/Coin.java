@@ -1,4 +1,4 @@
-package coincrawler.entity;
+package com.kunfeng2002.be002.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 
 @Entity
@@ -46,28 +46,28 @@ public class Coin {
     private Integer decimals;
     
     @Column(name = "total_supply", precision = 36, scale = 18)
-    private BigDecimal totalSupply;
+    private BigInteger totalSupply;
     
     @Column(name = "price_usd", precision = 36, scale = 18)
-    private BigDecimal priceUsd;
+    private BigInteger priceUsd;
     
     @Column(name = "price_change_24h", precision = 36, scale = 18)
-    private BigDecimal priceChange24h;
+    private BigInteger priceChange24h;
     
     @Column(name = "price_change_percentage_24h", precision = 36, scale = 18)
-    private BigDecimal priceChangePercentage24h;
+    private BigInteger priceChangePercentage24h;
     
     @Column(name = "market_cap_usd", precision = 36, scale = 18)
-    private BigDecimal marketCapUsd;
+    private BigInteger marketCapUsd;
     
     @Column(name = "trade_volume_usd", precision = 36, scale = 18)
-    private BigDecimal tradeVolumeUsd;
+    private BigInteger tradeVolumeUsd;
     
     @Column(name = "liquidity_usd", precision = 36, scale = 18)
-    private BigDecimal liquidityUsd;
+    private BigInteger liquidityUsd;
     
     @Column(name = "fees_24h", precision = 36, scale = 18)
-    private BigDecimal fees24h;
+    private BigInteger fees24h;
     
     @Column(name = "tx_count_24h")
     private Long txCount24h;
@@ -79,9 +79,11 @@ public class Coin {
     private Long createdAtTimestamp;
     
     @Column(name = "is_verified")
+    @Builder.Default
     private Boolean isVerified = false;
     
     @Column(name = "is_scam")
+    @Builder.Default
     private Boolean isScam = false;
     
     @Column(name = "description", columnDefinition = "TEXT")
@@ -113,6 +115,10 @@ public class Coin {
     @Column(name = "last_synced_at")
     private LocalDateTime lastSyncedAt;
     
+    public String getSymbol() {
+        return symbol;
+    }
+    
     public String getFirstLetter() {
         if (symbol == null || symbol.isEmpty()) {
             return "OTHER";
@@ -130,6 +136,6 @@ public class Coin {
     }
     
     public boolean isTrending() {
-        return tradeVolumeUsd != null && tradeVolumeUsd.compareTo(BigDecimal.valueOf(1000000)) > 0;
+        return tradeVolumeUsd != null && tradeVolumeUsd.compareTo(BigInteger.valueOf(1000000)) > 0;
     }
 }
