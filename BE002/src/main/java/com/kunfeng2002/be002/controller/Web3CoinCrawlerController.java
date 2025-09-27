@@ -4,7 +4,6 @@ import com.kunfeng2002.be002.entity.Coin;
 import com.kunfeng2002.be002.entity.Pair;
 import com.kunfeng2002.be002.entity.Token;
 import com.kunfeng2002.be002.service.Web3CoinCrawlerService;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;

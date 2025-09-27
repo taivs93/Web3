@@ -29,10 +29,10 @@ public class RealTimeCoinCrawlerService {
     private final TokenRepository tokenRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     
-    @Value("${bscscan.api.url:https://api.bscscan.com/api}")
+    @Value("${api.bscscan.base-url:https://api.bscscan.com/api}")
     private String bscScanApiUrl;
     
-    @Value("${bscscan.api.key:}")
+    @Value("${api.bscscan.api-key:}")
     private String bscScanApiKey;
     
     @Value("${crawler.realtime.enabled:true}")
@@ -154,10 +154,18 @@ public class RealTimeCoinCrawlerService {
             
             String response = restTemplate.getForObject(url, String.class);
             if (response != null) {
+                log.debug("BSCScan response: {}", response);
                 JsonNode jsonResponse = objectMapper.readTree(response);
                 if (jsonResponse.has("result")) {
                     String blockHex = jsonResponse.get("result").asText();
-                    return Long.parseLong(blockHex.substring(2), 16);
+                    // Kiểm tra xem có phải là hex number không
+                    if (blockHex.startsWith("0x") && blockHex.length() > 2) {
+                        return Long.parseLong(blockHex.substring(2), 16);
+                    } else {
+                        log.warn("Invalid block number format: {}", blockHex);
+                    }
+                } else {
+                    log.warn("No result in BSCScan response: {}", response);
                 }
             }
         } catch (Exception e) {
@@ -168,6 +176,10 @@ public class RealTimeCoinCrawlerService {
     
     private void processBlock(long blockNumber) {
         try {
+            // Chỉ log block được xử lý, không tạo token từ block nữa
+            log.debug("Processing block {} - Token creation from blocks is disabled", blockNumber);
+            
+            // Vẫn giữ việc đọc block để theo dõi, nhưng không tạo token
             String blockHex = "0x" + Long.toHexString(blockNumber);
             String url = bscScanApiUrl + BSCSCAN_GET_BLOCK_BY_NUMBER_URL;
             if (!bscScanApiKey.isEmpty()) {
@@ -194,31 +206,10 @@ public class RealTimeCoinCrawlerService {
                 return;
             }
             
-            List<NoLombokToken> newTokens = new ArrayList<>();
+            // Chỉ log thông tin block, không tạo token
+            log.debug("Block {} has {} transactions - Token creation disabled", blockNumber, transactions.size());
             
-            for (JsonNode tx : transactions) {
-                if (!isRunning.get()) {
-                    break;
-                }
-                
-                if (tx.has("to") && tx.get("to").isNull() && 
-                    tx.has("contractAddress") && !tx.get("contractAddress").isNull()) {
-                    
-                    String contractAddress = tx.get("contractAddress").asText();
-                    NoLombokToken token = createTokenFromContract(contractAddress, blockNumber);
-                    
-                    if (token != null && !tokenRepository.findByAddressAndNetwork(contractAddress, BSC_MAINNET).isPresent()) {
-                        newTokens.add(token);
-                        totalNewTokens.incrementAndGet();
-                        log.info("Found new token at address {}", contractAddress);
-                    }
-                }
-            }
-            
-            if (!newTokens.isEmpty()) {
-                tokenRepository.saveAll(newTokens);
-                log.info("Saved {} new tokens from block {}", newTokens.size(), blockNumber);
-            }
+            // Không tạo token từ block nữa - chỉ theo dõi blockchain
             
         } catch (Exception e) {
             log.error("Error processing block {}", blockNumber, e);

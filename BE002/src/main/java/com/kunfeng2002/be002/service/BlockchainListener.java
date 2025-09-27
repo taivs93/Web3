@@ -94,7 +94,14 @@ public class BlockchainListener {
                             }
                         },
                         error -> {
-                            log.error("Error while listening to {} blockchain", network, error);
+                            log.error("Error while listening to {} blockchain: {}", network, error.getMessage());
+                            // Không retry nếu là WebSocket connection error
+                            if (error.getMessage() != null && 
+                                (error.getMessage().contains("WebSocket") || 
+                                 error.getMessage().contains("WebsocketNotConnectedException"))) {
+                                log.warn("WebSocket connection error for network {} - will not retry", network);
+                                return;
+                            }
                             restartListener(network, web3);
                         }
                 );
@@ -122,7 +129,14 @@ public class BlockchainListener {
                 log.info("Restarted blockchain listener for network: {}", network);
                 retryCounts.put(network, 0);
             } catch (Exception e) {
-                log.error("Failed to restart listener for {}", network, e);
+                log.error("Failed to restart listener for {}: {}", network, e.getMessage());
+                // Không retry nếu là WebSocket connection error
+                if (e.getMessage() != null && 
+                    (e.getMessage().contains("WebSocket") || 
+                     e.getMessage().contains("WebsocketNotConnectedException"))) {
+                    log.warn("WebSocket connection error for network {} - will not retry", network);
+                    return;
+                }
                 restartListener(network, web3);
             }
         }, delay, TimeUnit.MILLISECONDS);

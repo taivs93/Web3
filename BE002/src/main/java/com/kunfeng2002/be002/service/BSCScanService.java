@@ -26,10 +26,10 @@ public class BSCScanService {
     private final RealTimeCoinCrawlerService realTimeCoinCrawlerService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${bscscan.api.url:https://api.bscscan.com/api}")
+    @Value("${api.bscscan.base-url:https://api.bscscan.com/api}")
     private String bscScanApiUrl;
 
-    @Value("${bscscan.api.key:}")
+    @Value("${api.bscscan.api-key:}")
     private String bscScanApiKey;
 
     private static final String BSC_MAINNET = "BSC";
