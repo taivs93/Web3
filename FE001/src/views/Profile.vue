@@ -242,7 +242,7 @@ const openTelegramBot = async () => {
     const linkingCode = response.data.data
     
     // Mở Telegram bot
-    const botUsername = 'taiteasicale_bot'
+    const botUsername = 'telebotweb3bot'
     const telegramUrl = `https://t.me/${botUsername}`
     window.open(telegramUrl, '_blank')
     
