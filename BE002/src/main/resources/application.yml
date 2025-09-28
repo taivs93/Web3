@@ -2,9 +2,9 @@ spring:
   application:
     name: web3-backend
   datasource:
-    url: jdbc:mysql://localhost:3306/db_web3
-    username: user
-    password: Lamnguyen1962@
+    url: jdbc:mysql://localhost:3306/web3_db
+    username: root
+    password: 251202
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     show-sql: false
@@ -32,6 +32,9 @@ spring:
       auto-offset-reset: latest
       enable-auto-commit: true
       max-poll-records: 500
+    topics:
+      coin-crawl: coin-crawl-topic
+      coin-crawl-scheduled: coin-crawl-scheduled-topic
 
   cache:
     type: redis
@@ -60,29 +63,18 @@ web3j:
 
 telegram:
   bot:
-    username: taiteasicale_bot
-    token: 8493544022:AAEL-OiS659ZDo6z8I4OPSi6uOHzG1OK9PY
-
-coingecko:
-  api:
-    url: https://api.coingecko.com/api/v3
-    key: CG-oUHtDQkWkh3Q9sk157QEP5qK
-
-bscscan:
-  api:
-    url: https://api.bscscan.com/api
-    key: X4KAZBFGFFM3CJ762QM3M5YF5F5ZMHMQEC
-
+    username: telebotweb3bot
+    token: 8396553381:AAFsgKFhWDr0QguAwUp1bmk6L5USTeX4NFs
 
 network:
   # ethereum:
   #   rpc-url: wss://mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
   #   chain-id: 1
   bsc:
-#    rpc-url: wss://bnb-testnet.g.alchemy.com/v2/UN7-adHP_ym7EKduai7QA
-#    chain-id: 97
-      rpc-url: wss://bsc-mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
-      chain-id: 56
+    rpc-url: wss://bnb-testnet.g.alchemy.com/v2/UN7-adHP_ym7EKduai7QA
+    chain-id: 97
+  #    rpc-url: wss://bsc-mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
+  #    chain-id: 56
   # arbitrum:
   #   rpc-url: wss://arbitrum-mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
   #   chain-id: 42161
@@ -100,9 +92,21 @@ app:
   blockchain:
     reconnect-delay: 5000
     max-retry-attempts: 3
-  crawler:
-    batch-size: 100
-    max-blocks-per-run: 1000
-    enabled-networks: BSC
-    crawl-interval: 30000
-    enable-scheduled-crawling: true
+
+thegraph:
+  token: eyJhbGciOiJLTVNFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ5NDIzMTcsImp0aSI6ImI4NTdkMTg4LTc3YjAtNDZiMC1hM2ExLTQyOTRjNGZiY2MzZiIsImlhdCI6MTc1ODk0MjMxNywiaXNzIjoiZGZ1c2UuaW8iLCJzdWIiOiIweG9uZTczMWUzZGY4NjRlZDZjMjIiLCJ2IjoyLCJha2kiOiI4MjdmZThmNTI0MzhlNGE4ZjVhODE4YjRjYjE2N2E1NzFjN2JkNTFkZTY3NGYxOTI5OTA4MDJiMjc3MWU5ZDg1IiwidWlkIjoiMHhvbmU3MzFlM2RmODY0ZWQ2YzIyIiwic3Vic3RyZWFtc19wbGFuX3RpZXIiOiJGUkVFIiwiY2ZnIjp7IlNVQlNUUkVBTVNfTUFYX1JFUVVFU1RTIjoiMiIsIlNVQlNUUkVBTVNfUEFSQUxMRUxfSk9CUyI6IjUiLCJTVUJTVFJFQU1TX1BBUkFMTEVMX1dPUktFUlMiOiI1In19.XVqDljf0KTVDBbCCciNagHB__acSGckx5tzYEhW1jDhO42XY_gNIGqtgMc8Medhjzht2gR41Bne-KHqRI9reLQ
+  api-key: server_730ade174597d59a82ad91855aa0d9b6
+  base-url: https://token-api.thegraph.com
+  pancakeswap-url: https://api.thegraph.com/subgraphs/name/pancakeswap/exchange
+
+coinmarketcap:
+  api-key: bc17cc89-9246-45a4-8ec1-07865cba8445
+  base-url: https://pro-api.coinmarketcap.com/v1
+
+coingecko:
+  api-key: CG-oUHtDQkWkh3Q9sk157QEP5qK
+  base-url: https://api.coingecko.com/api/v3
+
+bscscan:
+  api-key: UB8S824RSBZAISNG7NSBHQM6791D6G1VS7
+  base-url: https://api.bscscan.com/api

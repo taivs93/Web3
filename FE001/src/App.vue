@@ -1,10 +1,11 @@
 <script setup>
-// App component logic
+import GasFeeWidget from '@/components/GasFeeWidget.vue'
 </script>
 
 <template>
   <div id="app">
     <router-view />
+    <GasFeeWidget />
   </div>
 </template>
 

@@ -1,191 +1,240 @@
 package com.kunfeng2002.be002.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kunfeng2002.be002.entity.Token;
-import com.kunfeng2002.be002.repository.TokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
 public class BSCScanService {
 
     private final RestTemplate restTemplate;
-    private final TokenRepository tokenRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${bscscan.api.url:https://api.bscscan.com/api}")
-    private String bscScanApiUrl;
+    @Value("${bscscan.api-key}")
+    private String bscscanApiKey;
 
-    @Value("${bscscan.api.key:}")
-    private String bscScanApiKey;
+    @Value("${bscscan.base-url}")
+    private String bscscanBaseUrl;
 
-    private static final String BSC_MAINNET = "BSC";
-    private static final String BSCSCAN_GET_TOKEN_LIST_URL = "?module=token&action=getTokenList&page=1&offset={offset}&sort=timestamp&order=desc";
-
-    public List<Token> getNewTokens(int count) {
+    public String getContractAddress(String symbol, String name) {
         try {
-            log.info("Fetching {} new tokens from BSCScan", count);
+            // Tìm kiếm token trên BSCScan
+            String searchQuery = symbol + " " + name;
+            String url = bscscanBaseUrl + "?module=token&action=tokenlist&address=0x0000000000000000000000000000000000000000&apikey=" + bscscanApiKey;
             
-            String url = bscScanApiUrl + BSCSCAN_GET_TOKEN_LIST_URL;
-            if (!bscScanApiKey.isEmpty()) {
-                url += "&apikey=" + bscScanApiKey;
-            }
-
-            String response = restTemplate.getForObject(url, String.class, count);
-            if (response == null) {
-                log.warn("Empty response from BSCScan API");
-                return new ArrayList<>();
-            }
-
-            JsonNode jsonResponse = objectMapper.readTree(response);
-            if (!jsonResponse.get("status").asText().equals("1")) {
-                log.error("BSCScan API error: {}", jsonResponse.get("message").asText());
-                return new ArrayList<>();
-            }
-
-            JsonNode result = jsonResponse.get("result");
-            if (!result.isArray()) {
-                log.warn("Invalid result format from BSCScan API");
-                return new ArrayList<>();
-            }
-
-            List<Token> newTokens = new ArrayList<>();
-            for (JsonNode tokenNode : result) {
-                try {
-                    Token token = parseTokenFromBSCScan(tokenNode);
-                    if (token != null) {
-                        if (!tokenRepository.findByTokenAddressAndNetwork(token.getTokenAddress(), BSC_MAINNET).isPresent()) {
-                            newTokens.add(token);
-                            if (newTokens.size() >= count) {
-                                break;
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("Error parsing token from BSCScan: {}", e.getMessage());
-                }
-            }
-
-            if (!newTokens.isEmpty()) {
-                tokenRepository.saveAll(newTokens);
-                log.info("Saved {} new tokens to database", newTokens.size());
-            }
-
-            return newTokens;
-
-        } catch (Exception e) {
-            log.error("Error fetching new tokens from BSCScan", e);
-            return new ArrayList<>();
-        }
-    }
-
-    private Token parseTokenFromBSCScan(JsonNode tokenNode) {
-        try {
-            String contractAddress = tokenNode.get("contractAddress").asText();
-            String name = tokenNode.get("tokenName").asText();
-            String symbol = tokenNode.get("symbol").asText();
-            int decimals = tokenNode.get("divisor").asInt();
-
-            TokenInfo tokenInfo = getTokenInfo(contractAddress);
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
             
-            return Token.builder()
-                    .tokenAddress(contractAddress)
-                    .name(name)
-                    .symbol(symbol)
-                    .decimals(decimals)
-                    .network(BSC_MAINNET)
-                    .isVerified(true)
-                    .isActive(true)
-                    .totalSupply(tokenInfo != null ? tokenInfo.totalSupply : null)
-                    .marketCap(tokenInfo != null ? tokenInfo.marketCap : null)
-                    .priceUsd(tokenInfo != null ? tokenInfo.priceUsd : null)
-                    .volume24h(tokenInfo != null ? tokenInfo.volume24h : null)
-                    .priceChange24h(tokenInfo != null ? tokenInfo.priceChange24h : null)
-                    .lastPriceUpdate(LocalDateTime.now())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
-
+            if (response != null && "1".equals(response.get("status"))) {
+                // Tìm token phù hợp trong danh sách
+                return findMatchingToken(response, symbol, name);
+            }
+            
+            // Fallback: tìm kiếm bằng symbol
+            return searchTokenBySymbol(symbol);
+            
         } catch (Exception e) {
-            log.error("Error parsing token from BSCScan response", e);
+            log.error("Lỗi khi tìm kiếm contract address từ BSCScan: {}", e.getMessage(), e);
             return null;
         }
     }
 
-    private TokenInfo getTokenInfo(String contractAddress) {
+    private String findMatchingToken(Map<String, Object> response, String symbol, String name) {
         try {
-            String url = bscScanApiUrl + "?module=token&action=tokeninfo&contractaddress=" + contractAddress;
-            if (!bscScanApiKey.isEmpty()) {
-                url += "&apikey=" + bscScanApiKey;
-            }
-
-            String response = restTemplate.getForObject(url, String.class);
-            if (response == null) return null;
-
-            JsonNode jsonResponse = objectMapper.readTree(response);
-            if (!jsonResponse.get("status").asText().equals("1")) {
-                return null;
-            }
-
-            JsonNode result = jsonResponse.get("result");
-            if (result == null || !result.isArray() || result.size() == 0) {
-                return null;
-            }
-
-            JsonNode tokenData = result.get(0);
-            TokenInfo tokenInfo = new TokenInfo();
-
-            String totalSupplyStr = tokenData.get("totalSupply").asText();
-            if (!totalSupplyStr.isEmpty()) {
-                tokenInfo.totalSupply = new BigInteger(totalSupplyStr);
-            }
-
-            String marketCapStr = tokenData.get("marketCap").asText();
-            if (!marketCapStr.isEmpty()) {
-                try {
-                    tokenInfo.marketCap = new BigInteger(marketCapStr);
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid market cap format: {}", marketCapStr);
-                }
-            }
-
-            return tokenInfo;
-
+            // BSCScan trả về danh sách tokens
+            // Tìm token có symbol hoặc name phù hợp
+            // Logic này cần được implement dựa trên response structure của BSCScan
+            
+            // Tạm thời return null để implement sau
+            return null;
         } catch (Exception e) {
-            log.debug("Error fetching token info for {}: {}", contractAddress, e.getMessage());
+            log.error("Lỗi khi tìm token phù hợp: {}", e.getMessage());
             return null;
         }
     }
 
-    public List<Token> getLatestTokensFromDB(int count) {
+    private String searchTokenBySymbol(String symbol) {
         try {
-            return tokenRepository.findByNetworkAndIsActiveTrueOrderByMarketCapDesc(
-                    BSC_MAINNET, 
-                    org.springframework.data.domain.PageRequest.of(0, count)
-            );
+            // Tìm kiếm token bằng symbol
+            String url = bscscanBaseUrl + "?module=token&action=tokenlist&address=0x0000000000000000000000000000000000000000&apikey=" + bscscanApiKey;
+            
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            if (response != null && "1".equals(response.get("status"))) {
+                // Tìm token có symbol phù hợp
+                return findTokenBySymbol(response, symbol);
+            }
+            
+            return null;
         } catch (Exception e) {
-            log.error("Error fetching latest tokens from database", e);
-            return new ArrayList<>();
+            log.error("Lỗi khi tìm kiếm token bằng symbol: {}", e.getMessage());
+            return null;
         }
     }
 
-    private static class TokenInfo {
-        BigInteger totalSupply;
-        BigInteger marketCap;
-        BigInteger priceUsd;
-        BigInteger volume24h;
-        BigDecimal priceChange24h;
+    private String findTokenBySymbol(Map<String, Object> response, String symbol) {
+        // Implement logic tìm token theo symbol
+        // Cần xem response structure của BSCScan API
+        return null;
+    }
+
+    public String getTokenInfo(String contractAddress) {
+        try {
+            String url = bscscanBaseUrl + "?module=token&action=tokeninfo&contractaddress=" + contractAddress + "&apikey=" + bscscanApiKey;
+            
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            if (response != null && "1".equals(response.get("status"))) {
+                return response.toString();
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy thông tin token từ BSCScan: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public String getTokenSymbol(String contractAddress) {
+        try {
+            // Sử dụng CoinGecko API để tìm token theo contract address
+            String url = "https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/" + contractAddress;
+            
+            log.info("Gọi CoinGecko API để lấy symbol: {}", url);
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            log.info("CoinGecko response: {}", response);
+            
+            if (response != null && response.get("symbol") != null) {
+                String symbol = (String) response.get("symbol");
+                log.info("Tìm thấy symbol: {}", symbol);
+                return symbol.toUpperCase();
+            } else {
+                log.warn("CoinGecko API không tìm thấy token: {}", response);
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy symbol token từ CoinGecko: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    private String decodeHexToString(String hex) {
+        try {
+            if (hex.startsWith("0x")) {
+                hex = hex.substring(2);
+            }
+            
+            // Remove padding zeros
+            hex = hex.replaceAll("^0+", "");
+            if (hex.length() % 2 != 0) {
+                hex = "0" + hex;
+            }
+            
+            if (hex.length() == 0) {
+                return "";
+            }
+            
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < hex.length(); i += 2) {
+                String str = hex.substring(i, i + 2);
+                int charCode = Integer.parseInt(str, 16);
+                if (charCode > 0) {
+                    result.append((char) charCode);
+                }
+            }
+            
+            return result.toString().trim();
+        } catch (Exception e) {
+            log.error("Lỗi khi decode hex: {}", e.getMessage());
+            return "";
+        }
+    }
+
+    public String getTokenName(String contractAddress) {
+        try {
+            // Sử dụng CoinGecko API để tìm token theo contract address
+            String url = "https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/" + contractAddress;
+            
+            log.info("Gọi CoinGecko API để lấy tên token: {}", url);
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            log.info("CoinGecko response: {}", response);
+            
+            if (response != null && response.get("name") != null) {
+                String name = (String) response.get("name");
+                log.info("Tìm thấy tên token: {}", name);
+                return name;
+            } else {
+                log.warn("CoinGecko API không tìm thấy token: {}", response);
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy tên token từ CoinGecko: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public Integer getTokenDecimals(String contractAddress) {
+        try {
+            // Sử dụng CoinGecko API để tìm token theo contract address
+            String url = "https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/" + contractAddress;
+            
+            log.info("Gọi CoinGecko API để lấy decimals: {}", url);
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            log.info("CoinGecko response: {}", response);
+            
+            if (response != null && response.get("detail_platforms") != null) {
+                Map<String, Object> platforms = (Map<String, Object>) response.get("detail_platforms");
+                Map<String, Object> bsc = (Map<String, Object>) platforms.get("binance-smart-chain");
+                if (bsc != null && bsc.get("decimal_place") != null) {
+                    Integer decimals = (Integer) bsc.get("decimal_place");
+                    log.info("Tìm thấy decimals: {}", decimals);
+                    return decimals;
+                }
+            } else {
+                log.warn("CoinGecko API không tìm thấy token: {}", response);
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy decimals token từ CoinGecko: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public String searchTokenByName(String name) {
+        try {
+            // BSCScan không có API search trực tiếp, sử dụng tokenlist
+            String url = bscscanBaseUrl + "?module=token&action=tokenlist&address=0x0000000000000000000000000000000000000000&apikey=" + bscscanApiKey;
+            
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            if (response != null && "1".equals(response.get("status"))) {
+                // Tìm token có tên phù hợp
+                return findTokenByName(response, name);
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Lỗi khi tìm kiếm token theo tên: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private String findTokenByName(Map<String, Object> response, String name) {
+        try {
+            return null;
+        } catch (Exception e) {
+            log.error("Lỗi khi tìm token theo tên: {}", e.getMessage());
+            return null;
+        }
     }
 }

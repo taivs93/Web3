@@ -1,26 +1,126 @@
 package com.kunfeng2002.be002.dto.request;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-@Data
-@Builder
 public class FeeRequest {
     private BigInteger gasLimit;
-
-    @Builder.Default
     private BigDecimal slowMultiplier = BigDecimal.valueOf(1.0);
-    @Builder.Default
     private BigDecimal recommendedMultiplier = BigDecimal.valueOf(1.2);
-    @Builder.Default
     private BigDecimal fastMultiplier = BigDecimal.valueOf(1.5);
-
-    @Builder.Default
     private int blockCount = 5;
-    @Builder.Default
     private double percentile = 25.0;
-}
 
+    // Default constructor
+    public FeeRequest() {}
+
+    // Constructor with all parameters
+    public FeeRequest(BigInteger gasLimit, BigDecimal slowMultiplier, BigDecimal recommendedMultiplier, 
+                     BigDecimal fastMultiplier, int blockCount, double percentile) {
+        this.gasLimit = gasLimit;
+        this.slowMultiplier = slowMultiplier;
+        this.recommendedMultiplier = recommendedMultiplier;
+        this.fastMultiplier = fastMultiplier;
+        this.blockCount = blockCount;
+        this.percentile = percentile;
+    }
+
+    // Getters
+    public BigInteger getGasLimit() {
+        return gasLimit;
+    }
+
+    public BigDecimal getSlowMultiplier() {
+        return slowMultiplier;
+    }
+
+    public BigDecimal getRecommendedMultiplier() {
+        return recommendedMultiplier;
+    }
+
+    public BigDecimal getFastMultiplier() {
+        return fastMultiplier;
+    }
+
+    public int getBlockCount() {
+        return blockCount;
+    }
+
+    public double getPercentile() {
+        return percentile;
+    }
+
+    // Setters
+    public void setGasLimit(BigInteger gasLimit) {
+        this.gasLimit = gasLimit;
+    }
+
+    public void setSlowMultiplier(BigDecimal slowMultiplier) {
+        this.slowMultiplier = slowMultiplier;
+    }
+
+    public void setRecommendedMultiplier(BigDecimal recommendedMultiplier) {
+        this.recommendedMultiplier = recommendedMultiplier;
+    }
+
+    public void setFastMultiplier(BigDecimal fastMultiplier) {
+        this.fastMultiplier = fastMultiplier;
+    }
+
+    public void setBlockCount(int blockCount) {
+        this.blockCount = blockCount;
+    }
+
+    public void setPercentile(double percentile) {
+        this.percentile = percentile;
+    }
+
+    // Builder pattern
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private BigInteger gasLimit;
+        private BigDecimal slowMultiplier = BigDecimal.valueOf(1.0);
+        private BigDecimal recommendedMultiplier = BigDecimal.valueOf(1.2);
+        private BigDecimal fastMultiplier = BigDecimal.valueOf(1.5);
+        private int blockCount = 5;
+        private double percentile = 25.0;
+
+        public Builder gasLimit(BigInteger gasLimit) {
+            this.gasLimit = gasLimit;
+            return this;
+        }
+
+        public Builder slowMultiplier(BigDecimal slowMultiplier) {
+            this.slowMultiplier = slowMultiplier;
+            return this;
+        }
+
+        public Builder recommendedMultiplier(BigDecimal recommendedMultiplier) {
+            this.recommendedMultiplier = recommendedMultiplier;
+            return this;
+        }
+
+        public Builder fastMultiplier(BigDecimal fastMultiplier) {
+            this.fastMultiplier = fastMultiplier;
+            return this;
+        }
+
+        public Builder blockCount(int blockCount) {
+            this.blockCount = blockCount;
+            return this;
+        }
+
+        public Builder percentile(double percentile) {
+            this.percentile = percentile;
+            return this;
+        }
+
+        public FeeRequest build() {
+            return new FeeRequest(gasLimit, slowMultiplier, recommendedMultiplier, 
+                                fastMultiplier, blockCount, percentile);
+        }
+    }
+}

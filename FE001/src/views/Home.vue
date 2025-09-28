@@ -8,6 +8,12 @@
             <h1 class="text-xl font-bold text-gray-900">Web3 Auth App</h1>
           </div>
           <div class="flex items-center space-x-4">
+            <router-link
+              to="/search"
+              class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Tìm kiếm
+            </router-link>
             <template v-if="authStore.isAuthenticated">
               <router-link
                 to="/profile"
@@ -56,6 +62,7 @@
           </router-link>
         </div>
       </div>
+
 
       <!-- Features -->
       <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -163,6 +170,22 @@
                   <span class="ml-2 font-mono text-sm">/api/health</span>
                 </div>
                 <p class="text-sm text-gray-600">Kiểm tra trạng thái server</p>
+              </div>
+              
+              <div class="p-4 bg-orange-50 rounded-lg">
+                <div class="flex items-center mb-2">
+                  <span class="bg-orange-500 text-white px-2 py-1 rounded text-xs font-mono">GET</span>
+                  <span class="ml-2 font-mono text-sm">/api/gas/estimate/{network}</span>
+                </div>
+                <p class="text-sm text-gray-600">Lấy ước tính phí gas</p>
+              </div>
+              
+              <div class="p-4 bg-teal-50 rounded-lg">
+                <div class="flex items-center mb-2">
+                  <span class="bg-teal-500 text-white px-2 py-1 rounded text-xs font-mono">POST</span>
+                  <span class="ml-2 font-mono text-sm">/api/search/general</span>
+                </div>
+                <p class="text-sm text-gray-600">Tìm kiếm blockchain data</p>
               </div>
             </div>
           </div>
