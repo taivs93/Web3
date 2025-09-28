@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    
+    <div>
+        <label>User ID: </label>
+        <input type="number" id="userId" value="1" />
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+    </div>
+    
+    <div>
+        <label>Test Message: </label>
+        <input type="text" id="testMessage" value="Hello WebSocket!" />
+        <button onclick="sendTestMessage()">Send Test Message</button>
+    </div>
+    
+    <div>
+        <button onclick="testNotification()">Test Notification</button>
+        <button onclick="testWalletActivity()">Test Wallet Activity</button>
+    </div>
+    
+    <div>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div id="logs" class="log"></div>
+
+    <script>
+        let ws = null;
+        let connected = false;
+        
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function connect() {
+            if (connected) {
+                log('WebSocket already connected', 'error');
+                return;
+            }
+            
+            const userId = document.getElementById('userId').value;
+            const wsUrl = 'ws://localhost:8080/api/ws';
+            
+            log(`Connecting to ${wsUrl} for user ${userId}`, 'info');
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = function() {
+                    connected = true;
+                    log('✅ WebSocket connected successfully', 'success');
+                    
+                    // Send registration message
+                    const registerMessage = {
+                        type: 'register',
+                        userId: parseInt(userId)
+                    };
+                    ws.send(JSON.stringify(registerMessage));
+                    log(`📤 Sent registration: ${JSON.stringify(registerMessage)}`, 'info');
+                };
+                
+                ws.onmessage = function(event) {
+                    log(`📨 Received: ${event.data}`, 'info');
+                    
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'registered') {
+                            log('✅ User registered successfully', 'success');
+                        } else if (data.type === 'notification') {
+                            log(`🔔 Notification: ${data.data}`, 'success');
+                        } else if (data.type === 'wallet-activity') {
+                            log(`💰 Wallet Activity: ${JSON.stringify(data.data)}`, 'success');
+                        }
+                    } catch (e) {
+                        log(`📄 Text message: ${event.data}`, 'info');
+                    }
+                };
+                
+                ws.onclose = function() {
+                    connected = false;
+                    log('🔌 WebSocket disconnected', 'error');
+                };
+                
+                ws.onerror = function(error) {
+                    log(`❌ WebSocket error: ${error}`, 'error');
+                    connected = false;
+                };
+                
+            } catch (error) {
+                log(`❌ Connection error: ${error}`, 'error');
+            }
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                connected = false;
+                log('🔌 Disconnected', 'info');
+            }
+        }
+        
+        function sendTestMessage() {
+            if (!connected) {
+                log('❌ WebSocket not connected', 'error');
+                return;
+            }
+            
+            const message = document.getElementById('testMessage').value;
+            const testMessage = {
+                type: 'test',
+                message: message
+            };
+            
+            ws.send(JSON.stringify(testMessage));
+            log(`📤 Sent test message: ${message}`, 'info');
+        }
+        
+        async function testNotification() {
+            const userId = document.getElementById('userId').value;
+            const message = document.getElementById('testMessage').value;
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/test/notify/${userId}?message=${encodeURIComponent(message)}`, {
+                    method: 'POST'
+                });
+                const result = await response.text();
+                log(`📤 Test notification sent: ${result}`, 'info');
+            } catch (error) {
+                log(`❌ Failed to send test notification: ${error}`, 'error');
+            }
+        }
+        
+        async function testWalletActivity() {
+            const userId = document.getElementById('userId').value;
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/test/wallet-activity/${userId}`, {
+                    method: 'POST'
+                });
+                const result = await response.text();
+                log(`📤 Test wallet activity sent: ${result}`, 'info');
+            } catch (error) {
+                log(`❌ Failed to send test wallet activity: ${error}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

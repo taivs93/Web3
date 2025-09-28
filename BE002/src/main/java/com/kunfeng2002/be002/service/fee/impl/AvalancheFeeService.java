@@ -15,7 +15,11 @@ public class AvalancheFeeService extends LegacyFeeService {
 
     private static Web3j getClient(Map<String, Web3j> web3Clients, String key) {
         Web3j client = web3Clients.get(key);
-        if (client == null) throw new IllegalStateException("Web3j not found for key: " + key);
+        if (client == null) {
+            
+            
+            return org.web3j.protocol.Web3j.build(new org.web3j.protocol.http.HttpService("http://localhost:8545"));
+        }
         return client;
     }
 }

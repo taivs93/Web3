@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug WebSocket</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .json { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Debug WebSocket Message Format</h1>
+    
+    <div>
+        <button onclick="connectWebSocket()">Connect WebSocket</button>
+        <button onclick="testNotification()">Test Notification</button>
+        <button onclick="testWalletActivity()">Test Wallet Activity</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div id="logs" class="log"></div>
+
+    <script>
+        let ws = null;
+        let connected = false;
+        
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function logJson(data, title = 'JSON Data') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'info';
+            logEntry.innerHTML = `
+                <div><strong>[${timestamp}] ${title}:</strong></div>
+                <div class="json">${JSON.stringify(data, null, 2)}</div>
+            `;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function connectWebSocket() {
+            if (connected) {
+                log('WebSocket already connected', 'info');
+                return;
+            }
+            
+            const wsUrl = 'ws://localhost:8080/api/ws';
+            log(`Connecting to ${wsUrl}`, 'info');
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                connected = true;
+                log('✅ WebSocket connected', 'success');
+                
+                // Send registration
+                const registerMessage = {
+                    type: 'register',
+                    userId: 1
+                };
+                ws.send(JSON.stringify(registerMessage));
+                log(`📤 Sent registration: ${JSON.stringify(registerMessage)}`, 'info');
+            };
+            
+            ws.onmessage = function(event) {
+                log(`📨 Received: ${event.data}`, 'info');
+                
+                try {
+                    const data = JSON.parse(event.data);
+                    logJson(data, 'Parsed WebSocket Message');
+                    
+                    if (data.type === 'registered') {
+                        log('✅ User registered successfully', 'success');
+                    } else if (data.type === 'notification') {
+                        log(`🔔 Notification: ${data.message}`, 'success');
+                    } else if (data.type === 'wallet-activity') {
+                        log(`💰 Wallet Activity received`, 'success');
+                        logJson(data.data, 'Wallet Activity Data');
+                        
+                        // Test parsing
+                        const walletData = data.data;
+                        log(`📊 Network: ${walletData.networkAsString || walletData.network}`, 'info');
+                        log(`📊 From: ${walletData.fromAddress}`, 'info');
+                        log(`📊 To: ${walletData.toAddress}`, 'info');
+                        log(`📊 Value: ${walletData.value}`, 'info');
+                        log(`📊 Hash: ${walletData.transactionHash}`, 'info');
+                    }
+                } catch (e) {
+                    log(`📄 Text message: ${event.data}`, 'info');
+                }
+            };
+            
+            ws.onclose = function() {
+                connected = false;
+                log('🔌 WebSocket disconnected', 'error');
+            };
+            
+            ws.onerror = function(error) {
+                log(`❌ WebSocket error: ${error}`, 'error');
+            };
+        }
+        
+        async function testNotification() {
+            try {
+                const response = await fetch('http://localhost:8080/api/test/notify/1?message=Hello%20World', {
+                    method: 'POST'
+                });
+                const result = await response.text();
+                log(`✅ Simple notification sent: ${result}`, 'success');
+            } catch (error) {
+                log(`❌ Failed to send simple notification: ${error}`, 'error');
+            }
+        }
+        
+        async function testWalletActivity() {
+            try {
+                const response = await fetch('http://localhost:8080/api/test/wallet-activity/1', {
+                    method: 'POST'
+                });
+                const result = await response.text();
+                log(`✅ Wallet activity sent: ${result}`, 'success');
+            } catch (error) {
+                log(`❌ Failed to send wallet activity: ${error}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        // Auto-connect on page load
+        window.onload = function() {
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>

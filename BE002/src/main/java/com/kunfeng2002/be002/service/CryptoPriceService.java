@@ -21,7 +21,7 @@ public class CryptoPriceService {
     public Map<String, Double> fetchAllPricesFromAPI() {
         Map<String, Double> prices = new HashMap<>();
         try {
-            String url = "https://api.binance.com/api/v3/ticker/price";
+            String url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,binancecoin,avalanche-2&vs_currencies=usd";
             String json = restTemplate.getForObject(url, String.class);
             JsonNode arr = objectMapper.readTree(json);
 

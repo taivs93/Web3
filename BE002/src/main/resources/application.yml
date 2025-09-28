@@ -49,6 +49,14 @@ spring:
     redis:
       host: localhost
       port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+        shutdown-timeout: 100ms
 
 server:
   port: 8080
@@ -74,16 +82,16 @@ telegram:
 
 network:
   ethereum:
-    rpc-url: wss://mainnet.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
+    rpc-url: https://mainnet.infura.io/v3/87c5a6adc8704d5bb36a92fbb85f8f52
     chain-id: 1
   bsc:
-    rpc-url: wss://bsc-mainnet.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
-    chain-id: 56
+    rpc-url: https://bsc-testnet.infura.io/v3/87c5a6adc8704d5bb36a92fbb85f8f52
+    chain-id: 97
   arbitrum:
-    rpc-url: wss://arbitrum-mainnet.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
+    rpc-url: wss://arbitrum-mainnet.infura.io/ws/v3/87c5a6adc8704d5bb36a92fbb85f8f52
     chain-id: 42161
   optimism:
-    rpc-url: wss://optimism-mainnet.infura.io/ws/v3/97891bfdd6734fe3a7c6a748646aa2d4
+    rpc-url: wss://optimism-mainnet.infura.io/ws/v3/87c5a6adc8704d5bb36a92fbb85f8f52
     chain-id: 10
   avalanche:
     rpc-url: wss://api.avax.network/ext/bc/C/ws

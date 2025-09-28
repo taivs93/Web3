@@ -1,59 +1,24 @@
 <template>
   <div class="relative">
-    <!-- Notification Bell Button -->
     <button
       @click="toggleNotifications"
-      class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="relative px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
-      <!-- Bell Icon -->
-      <svg 
-        class="w-6 h-6 transition-transform duration-200" 
-        :class="{ 'animate-pulse': hasNewNotifications }"
-        fill="none" 
-        stroke="currentColor" 
-        viewBox="0 0 24 24"
-      >
-        <path 
-          stroke-linecap="round" 
-          stroke-linejoin="round" 
-          stroke-width="2" 
-          d="M15 17h5l-5 5v-5zM4.828 7l2.586 2.586a2 2 0 002.828 0L12 7H4.828zM4.828 17l2.586-2.586a2 2 0 012.828 0L12 17H4.828zM15 7h5l-5-5v5z"
-        />
-        <path 
-          stroke-linecap="round" 
-          stroke-linejoin="round" 
-          stroke-width="2" 
-          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
-        />
-        <path 
-          stroke-linecap="round" 
-          stroke-linejoin="round" 
-          stroke-width="2" 
-          d="M12 6v6l4 2"
-        />
-      </svg>
-      
-      <!-- Notification Badge -->
-      <span 
-        v-if="unreadCount > 0" 
-        class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-bounce"
-      >
-        {{ unreadCount > 99 ? '99+' : unreadCount }}
+      <span class="text-sm font-medium">
+        Thông báo
+        <span 
+          v-if="unreadCount > 0" 
+          class="ml-1 bg-red-500 text-white text-xs rounded-full px-2 py-1"
+        >
+          {{ unreadCount > 99 ? '99+' : unreadCount }}
+        </span>
       </span>
-      
-      <!-- Pulse Ring for New Notifications -->
-      <span 
-        v-if="hasNewNotifications" 
-        class="absolute -top-1 -right-1 w-6 h-6 bg-red-400 rounded-full animate-ping opacity-75"
-      ></span>
     </button>
 
-    <!-- Notifications Dropdown -->
     <div 
       v-if="showNotifications" 
       class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden"
     >
-      <!-- Header -->
       <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
         <div class="flex items-center justify-between">
           <h3 class="text-sm font-semibold text-gray-900">Thông báo</h3>
@@ -75,12 +40,8 @@
         </div>
       </div>
 
-      <!-- Notifications List -->
       <div class="max-h-80 overflow-y-auto">
         <div v-if="notifications.length === 0" class="p-4 text-center text-gray-500">
-          <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.828 7l2.586 2.586a2 2 0 002.828 0L12 7H4.828zM4.828 17l2.586-2.586a2 2 0 012.828 0L12 17H4.828zM15 7h5l-5-5v5z"></path>
-          </svg>
           <p class="text-sm">Chưa có thông báo nào</p>
         </div>
         
@@ -91,24 +52,11 @@
             class="border-b border-gray-100 transition-all duration-200"
             :class="{ 'bg-blue-50': !notification.read }"
           >
-            <!-- Notification Header (Clickable) -->
             <div 
-              @click="toggleNotification(notification)"
+              @click="toggleNotificationExpansion(notification.id)"
               class="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
             >
               <div class="flex items-start space-x-3">
-                <!-- Notification Icon -->
-                <div class="flex-shrink-0">
-                  <div 
-                    class="w-8 h-8 rounded-full flex items-center justify-center"
-                    :class="getNotificationIconClass(notification.type)"
-                  >
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path :d="getNotificationIcon(notification.type)"></path>
-                    </svg>
-                  </div>
-                </div>
-                
                 <!-- Notification Content -->
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between">
@@ -117,15 +65,6 @@
                     </p>
                     <div class="flex items-center space-x-2">
                       <div v-if="!notification.read" class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <svg 
-                        class="w-4 h-4 text-gray-400 transition-transform duration-200"
-                        :class="{ 'rotate-180': isExpanded(notification.id) }"
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                      </svg>
                     </div>
                   </div>
                   <p class="text-sm text-gray-600 mt-1">
@@ -134,67 +73,23 @@
                   <p class="text-xs text-gray-500 mt-2">
                     {{ formatTime(notification.timestamp) }}
                   </p>
+                  
+                         <div v-if="expandedNotifications.includes(notification.id) && notification.fullData" class="mt-3 p-3 bg-gray-50 rounded-lg">
+                           <div class="text-xs text-gray-700 space-y-1">
+                             <div><strong>Network:</strong> {{ notification.fullData.networkAsString || notification.fullData.network || 'Unknown' }}</div>
+                             <div><strong>From:</strong> {{ notification.fullData.fromAddress || 'Unknown' }}</div>
+                             <div><strong>To:</strong> {{ notification.fullData.toAddress || 'Unknown' }}</div>
+                             <div><strong>Value:</strong> {{ notification.fullData.valueFormatted || (notification.fullData.value ? (parseFloat(notification.fullData.value) / Math.pow(10, 18)).toFixed(4) : '0') }} {{ notification.fullData.currency || 'ETH' }}</div>
+                             <div><strong>Hash:</strong> {{ notification.fullData.transactionHash || 'Unknown' }}</div>
+                             <div><strong>Block:</strong> {{ notification.fullData.blockNumber || 'Unknown' }}</div>
+                             <div><strong>Gas Price:</strong> {{ notification.fullData.gasPrice || 'Unknown' }}</div>
+                           </div>
+                         </div>
                 </div>
-              </div>
-            </div>
-
-            <!-- Expanded Details -->
-            <div 
-              v-if="isExpanded(notification.id)"
-              class="px-4 pb-3 bg-gray-50 border-t border-gray-200"
-            >
-              <div v-if="getNotificationDetails(notification)" class="mt-3 space-y-2">
-                <div class="text-xs text-gray-600">
-                  <div class="grid grid-cols-2 gap-2">
-                    <div>
-                      <span class="font-medium">Từ địa chỉ:</span>
-                      <p class="font-mono text-xs break-all">{{ getNotificationDetails(notification).fromAddress }}</p>
-                    </div>
-                    <div>
-                      <span class="font-medium">Đến địa chỉ:</span>
-                      <p class="font-mono text-xs break-all">{{ getNotificationDetails(notification).toAddress }}</p>
-                    </div>
-                  </div>
-                  
-                  <div class="grid grid-cols-2 gap-2 mt-2">
-                    <div>
-                      <span class="font-medium">Mạng:</span>
-                      <p class="text-xs">{{ getNotificationDetails(notification).network }}</p>
-                    </div>
-                    <div>
-                      <span class="font-medium">Giá trị:</span>
-                      <p class="text-xs font-mono">{{ formatValue(getNotificationDetails(notification).value, getNotificationDetails(notification).network) }}</p>
-                    </div>
-                  </div>
-                  
-                  <div class="mt-2">
-                    <span class="font-medium">Hash giao dịch:</span>
-                    <p class="font-mono text-xs break-all">{{ getNotificationDetails(notification).transactionHash }}</p>
-                  </div>
-                  
-                  <div class="mt-2">
-                    <span class="font-medium">Block số:</span>
-                    <p class="font-mono text-xs">{{ getNotificationDetails(notification).blockNumber }}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div v-else class="mt-3 text-xs text-gray-500">
-                <p>Không có thông tin chi tiết</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="px-4 py-2 border-t border-gray-200 bg-gray-50">
-        <button 
-          @click="viewAllNotifications"
-          class="w-full text-center text-sm text-blue-600 hover:text-blue-800"
-        >
-          Xem tất cả thông báo
-        </button>
       </div>
     </div>
   </div>
@@ -202,77 +97,29 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import SockJS from 'sockjs-client'
-import { Stomp } from '@stomp/stompjs'
-import { websocketAPI } from '@/services/api'
 
-const authStore = useAuthStore()
 
-// Reactive data
 const showNotifications = ref(false)
 const notifications = ref([])
 const hasNewNotifications = ref(false)
-const stompClient = ref(null)
-const isConnected = ref(false)
-const expandedNotification = ref(null)
+const expandedNotifications = ref([])
 
-// Computed properties
+
 const unreadCount = computed(() => {
   return notifications.value.filter(n => !n.read).length
 })
 
-// WebSocket connection
-const connectWebSocket = () => {
-  try {
-    const wsUrl = websocketAPI.getWebSocketUrl()
-    console.log('Connecting to WebSocket:', wsUrl)
-    const socket = new SockJS(wsUrl)
-    stompClient.value = Stomp.over(socket)
-    
-    stompClient.value.connect({}, (frame) => {
-      console.log('Connected to WebSocket:', frame)
-      isConnected.value = true
-      
-      // Subscribe to wallet activity notifications
-      stompClient.value.subscribe('/topic/wallet-activity', (message) => {
-        const data = JSON.parse(message.body)
-        console.log('Received notification data:', data)
-        
-        const fromAddress = data.fromAddress || data.from_address || 'Unknown'
-        const toAddress = data.toAddress || data.to_address || 'Unknown'
-        const network = data.network || data.networkAsString || 'Unknown'
-        
-        addNotification({
-          id: Date.now() + Math.random(),
-          type: 'wallet',
-          title: 'Hoạt động ví mới',
-          message: `Có giao dịch mới từ ${fromAddress.substring(0, 6)}... đến ${toAddress.substring(0, 6)}... trên ${network}`,
-          timestamp: new Date(),
-          read: false,
-          data: data
-        })
-      })
-    }, (error) => {
-      console.error('WebSocket connection error:', error)
-      isConnected.value = false
-    })
-  } catch (error) {
-    console.error('Failed to connect to WebSocket:', error)
-  }
-}
 
-// Notification methods
 const addNotification = (notification) => {
   notifications.value.unshift(notification)
   hasNewNotifications.value = true
   
-  // Auto-hide new notification indicator after 3 seconds
+  
   setTimeout(() => {
     hasNewNotifications.value = false
   }, 3000)
   
-  // Keep only last 50 notifications
+  
   if (notifications.value.length > 50) {
     notifications.value = notifications.value.slice(0, 50)
   }
@@ -282,13 +129,6 @@ const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
   if (showNotifications.value) {
     hasNewNotifications.value = false
-  }
-}
-
-const markAsRead = (notificationId) => {
-  const notification = notifications.value.find(n => n.id === notificationId)
-  if (notification) {
-    notification.read = true
   }
 }
 
@@ -302,34 +142,16 @@ const clearAllNotifications = () => {
   notifications.value = []
 }
 
-const viewAllNotifications = () => {
-  // In a real app, this would navigate to a full notifications page
-  console.log('View all notifications')
-  showNotifications.value = false
+const toggleNotificationExpansion = (notificationId) => {
+  const index = expandedNotifications.value.indexOf(notificationId)
+  if (index > -1) {
+    expandedNotifications.value.splice(index, 1)
+  } else {
+    expandedNotifications.value.push(notificationId)
+  }
 }
 
-// Utility functions
-const getNotificationIcon = (type) => {
-  const icons = {
-    wallet: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
-    chat: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
-    system: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-    error: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-    success: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-  }
-  return icons[type] || icons.system
-}
 
-const getNotificationIconClass = (type) => {
-  const classes = {
-    wallet: 'bg-blue-100 text-blue-600',
-    chat: 'bg-green-100 text-green-600',
-    system: 'bg-gray-100 text-gray-600',
-    error: 'bg-red-100 text-red-600',
-    success: 'bg-green-100 text-green-600'
-  }
-  return classes[type] || classes.system
-}
 
 const formatTime = (timestamp) => {
   const now = new Date()
@@ -346,140 +168,70 @@ const formatTime = (timestamp) => {
   return timestamp.toLocaleDateString('vi-VN')
 }
 
-// Click outside to close
+
 const handleClickOutside = (event) => {
   if (!event.target.closest('.relative')) {
     showNotifications.value = false
-    expandedNotification.value = null
   }
 }
 
-// Lifecycle
-// Methods for expand/collapse notifications
-const toggleNotification = (notification) => {
-  if (expandedNotification.value === notification.id) {
-    expandedNotification.value = null
-  } else {
-    expandedNotification.value = notification.id
-    // Mark as read when expanded
-    if (!notification.read) {
-      notification.read = true
-    }
+const handleWebSocketNotification = (event) => {
+  const { type, data } = event.detail
+  
+  let notification = null
+  
+  switch (type) {
+    case 'notification':
+      notification = {
+        id: Date.now() + Math.random(),
+        type: 'system',
+        title: 'Thông báo hệ thống',
+        message: data,
+        timestamp: new Date(),
+        read: false
+      }
+      break
+    case 'wallet-activity':
+      const networkName = data.networkAsString || data.network || 'Unknown'
+      const fromAddress = data.fromAddress || 'Unknown'
+      const toAddress = data.toAddress || 'Unknown'
+      const value = data.valueFormatted || (data.value ? (parseFloat(data.value) / Math.pow(10, 18)).toFixed(4) : '0')
+      const currency = data.currency || 'ETH'
+      
+      notification = {
+        id: Date.now() + Math.random(),
+        type: 'wallet',
+        title: `Hoạt động ví ${networkName}`,
+        message: `${fromAddress.slice(0, 6)}...${fromAddress.slice(-4)} → ${toAddress.slice(0, 6)}...${toAddress.slice(-4)} (${value} ${currency})`,
+        timestamp: new Date(),
+        read: false,
+        fullData: data
+      }
+      break
+    case 'price-alert':
+      notification = {
+        id: Date.now() + Math.random(),
+        type: 'price',
+        title: 'Cảnh báo giá',
+        message: `${data.symbol} = $${data.price}`,
+        timestamp: new Date(),
+        read: false
+      }
+      break
   }
-}
-
-const isExpanded = (notificationId) => {
-  return expandedNotification.value === notificationId
-}
-
-const getNotificationDetails = (notification) => {
-  if (!notification.data) return null
   
-  const data = notification.data
-  return {
-    fromAddress: data.fromAddress || data.from_address || 'Unknown',
-    toAddress: data.toAddress || data.to_address || 'Unknown',
-    network: data.network || data.networkAsString || 'Unknown',
-    transactionHash: data.transactionHash || data.transaction_hash || 'Unknown',
-    value: data.value || '0',
-    blockNumber: data.blockNumber || data.block_number || 'Unknown',
-    timestamp: data.timestamp || notification.timestamp
-  }
-}
-
-const formatValue = (value, network) => {
-  if (!value || value === '0') return '0'
-  
-  const numValue = parseFloat(value)
-  if (isNaN(numValue)) return value
-  
-  // Convert wei to ETH (assuming 18 decimals)
-  const ethValue = numValue / Math.pow(10, 18)
-  
-  if (ethValue < 0.001) {
-    return `${ethValue.toFixed(6)} ETH`
-  } else if (ethValue < 1) {
-    return `${ethValue.toFixed(4)} ETH`
-  } else {
-    return `${ethValue.toFixed(2)} ETH`
+  if (notification) {
+    addNotification(notification)
   }
 }
 
 onMounted(() => {
-  // Add some sample notifications for demo
-  addNotification({
-    id: 1,
-    type: 'system',
-    title: 'Chào mừng!',
-    message: 'Hệ thống thông báo đã sẵn sàng',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-    read: false
-  })
-  
-  addNotification({
-    id: 2,
-    type: 'wallet',
-    title: 'Giao dịch thành công',
-    message: 'Bạn đã nhận 0.1 ETH từ 0x1234...5678',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-    read: true
-  })
-  
-  // Connect to WebSocket
-  if (authStore.isAuthenticated) {
-    connectWebSocket()
-  }
-  
+  window.addEventListener('websocket-notification', handleWebSocketNotification)
   document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
-  if (stompClient.value) {
-    stompClient.value.disconnect()
-  }
+  window.removeEventListener('websocket-notification', handleWebSocketNotification)
   document.removeEventListener('click', handleClickOutside)
 })
 </script>
-
-<style scoped>
-/* Custom animations */
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.33);
-  }
-  40%, 50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.2);
-  }
-}
-
-.animate-pulse-ring {
-  animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-}
-
-/* Smooth transitions */
-.transition-all {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Custom scrollbar for notifications */
-.max-h-80::-webkit-scrollbar {
-  width: 4px;
-}
-
-.max-h-80::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.max-h-80::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 2px;
-}
-
-.max-h-80::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-</style>

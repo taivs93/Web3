@@ -1,9 +1,12 @@
 package com.kunfeng2002.be002.service;
 
+import com.kunfeng2002.be002.dto.request.AddTokenRequest;
 import com.kunfeng2002.be002.dto.request.FeeRequest;
 import com.kunfeng2002.be002.dto.request.CommandRequest;
+import com.kunfeng2002.be002.dto.request.PortfolioRequest;
 import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.dto.response.FeeResponse;
+import com.kunfeng2002.be002.dto.response.PortfolioResponse;
 import com.kunfeng2002.be002.entity.Chat;
 import com.kunfeng2002.be002.entity.ChatType;
 import com.kunfeng2002.be002.entity.User;
@@ -18,6 +21,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,6 +39,8 @@ public class TelegramBotService {
     private final GasService gasService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApplicationEventPublisher eventPublisher;
+    private final WebSocketNotifyService webSocketNotifyService;
+    private final PortfolioService portfolioService;
 
     @Transactional
     public ChatMessageResponse processCommand(CommandRequest request) {
@@ -49,12 +55,13 @@ public class TelegramBotService {
         User user = userRepository.findByWalletAddress(walletAddress)
                 .orElseThrow(() -> new DataNotFoundException("User with wallet not found"));
 
+        
         Chat chat = chatRepository.findByUserId(user.getId())
-                .orElseGet(() -> chatRepository.save(Chat.builder()
-                        .chatType(ChatType.PRIVATE)
-                        .title(user.getUsername() != null ? user.getUsername() : "Web User")
-                        .user(user)
-                        .build()));
+                .orElse(null);
+
+        if (chat == null) {
+            return buildResponse("Your account is not linked to Telegram. Please:\n1. Click 'Lấy Linking Code' button\n2. Send /link <code> in Telegram bot\n3. Then you can use commands here");
+        }
 
         return processCommandInternal(command, argument, chat.getChatId());
     }
@@ -76,6 +83,8 @@ public class TelegramBotService {
                     return buildResponse("Invalid wallet address format.\n\nExample: /follow 0x123...");
                 }
                 followService.follow(chatId, argument);
+                
+                webSocketNotifyService.notifyUser(getUserIdByChatId(chatId), "Đã theo dõi ví: " + argument);
                 return buildResponse("Followed address successfully: " + argument);
 
             case "/unfollow":
@@ -83,6 +92,8 @@ public class TelegramBotService {
                     return buildResponse("Invalid wallet address format.\n\nExample: /unfollow 0x123...");
                 }
                 followService.unfollow(chatId, argument);
+                
+                webSocketNotifyService.notifyUser(getUserIdByChatId(chatId), "Đã bỏ theo dõi ví: " + argument);
                 return buildResponse("Unfollowed address successfully: " + argument);
 
             case "/list":
@@ -124,7 +135,20 @@ public class TelegramBotService {
                 return buildResponse("Deleted alert: " + argument);
 
             case "/link":
-                return buildResponse(linkUserToTelegram(chatId, argument));
+                
+                if (argument == null || argument.trim().isEmpty()) {
+                    return buildResponse("Please provide a linking code. Use: /link <code>");
+                }
+                return buildResponse(linkUserToTelegram(chatId, argument.trim()));
+
+            case "/portfolio":
+                return handlePortfolioCommand(chatId, argument);
+
+            case "/addtoken":
+                return handleAddTokenCommand(chatId, argument);
+
+            case "/myportfolios":
+                return handleMyPortfoliosCommand(chatId);
 
             default:
                 return buildResponse("Unknown command.\nType /help to see available commands.");
@@ -146,6 +170,11 @@ public class TelegramBotService {
                 /listalerts - List your alerts
                 /delalert <price> - Delete alert
                 /link <linking code> - Link tele to web
+                
+                Portfolio Commands:
+                /portfolio <name> - Create new portfolio
+                /addtoken <symbol> <amount> <price> - Add token to portfolio
+                /myportfolios - List your portfolios
                 """;
     }
 
@@ -157,7 +186,6 @@ public class TelegramBotService {
         user.setTelegramLinkingCode(linkingCode);
         user.setTelegramLinkingCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
         userRepository.save(user);
-        log.info("Generated linking code {} for wallet {}", linkingCode, walletAddress);
         return linkingCode;
     }
 
@@ -176,16 +204,33 @@ public class TelegramBotService {
         if (!linkingCode.equals(user.getTelegramLinkingCode())) return "Linked code not match";
 
         Chat privateChat = chatRepository.findByChatId(chatId)
-                .orElseThrow(() -> new DataNotFoundException("Chat not found."));
+                .orElseGet(() -> {
+                    Chat newChat = Chat.builder()
+                            .chatId(chatId)
+                            .chatType(ChatType.PRIVATE)
+                            .title("Telegram Chat")
+                            .build();
+                    return chatRepository.save(newChat);
+                });
+
         if (!privateChat.isPrivate()) return "Group chat can not be linked";
 
         privateChat.setUser(user);
-        log.info("User {} linked to Telegram ID {}", user.getId(), privateChat.getChatId());
+        chatRepository.save(privateChat);
+
+        user.setTelegramLinkingCode(null);
+        user.setTelegramLinkingCodeExpiresAt(null);
+        userRepository.save(user);
+        
         return "Your Telegram account has been successfully linked!";
     }
 
     public void notifyUser(Long chatId, String message) {
         eventPublisher.publishEvent(new TelegramMessageEvent(chatId, message));
+    }
+
+    public void notifyUserWeb(Long userId, String message) {
+        webSocketNotifyService.notifyUser(userId, message);
     }
 
     private FeeResponse parseGasArgument(String argument) {
@@ -215,7 +260,125 @@ public class TelegramBotService {
                 .build();
     }
 
+    private Long getUserIdByChatId(Long chatId) {
+        try {
+            Chat chat = chatRepository.findByChatId(chatId).orElse(null);
+            return chat != null && chat.getUser() != null ? chat.getUser().getId() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private boolean isValidAddress(String address) {
         return address != null && address.matches("^0x[a-fA-F0-9]{40}$");
+    }
+
+    private ChatMessageResponse handlePortfolioCommand(Long chatId, String argument) {
+        if (argument == null || argument.trim().isEmpty()) {
+            return buildResponse("Please provide a portfolio name.\n\nExample: /portfolio My Crypto Portfolio");
+        }
+        
+        try {
+            Long userId = getUserIdByChatId(chatId);
+            if (userId == null) {
+                return buildResponse("Portfolio commands require account linking!\n\n" +
+                    "To use portfolio features:\n" +
+                    "1. Go to web interface: http://localhost:8080\n" +
+                    "2. Login with your wallet\n" +
+                    "3. Click 'Lấy Linking Code'\n" +
+                    "4. Send /link <code> in this chat\n" +
+                    "5. Then you can use /portfolio commands");
+            }
+            
+            PortfolioRequest request = PortfolioRequest.builder()
+                    .name(argument.trim())
+                    .description("Portfolio created via Telegram")
+                    .build();
+            
+            portfolioService.createPortfolio(userId, request);
+            return buildResponse("Portfolio '" + argument.trim() + "' created successfully!");
+        } catch (Exception e) {
+            return buildResponse("Error creating portfolio: " + e.getMessage());
+        }
+    }
+
+    private ChatMessageResponse handleAddTokenCommand(Long chatId, String argument) {
+        if (argument == null || !argument.contains(" ")) {
+            return buildResponse("Invalid format. Use: /addtoken BTC 0.5 45000");
+        }
+        
+        try {
+            String[] parts = argument.split(" ");
+            if (parts.length != 3) {
+                return buildResponse("Invalid format. Use: /addtoken <symbol> <amount> <price>");
+            }
+            
+            String symbol = parts[0].toUpperCase();
+            BigDecimal amount = new BigDecimal(parts[1]);
+            BigDecimal price = new BigDecimal(parts[2]);
+            
+            Long userId = getUserIdByChatId(chatId);
+            if (userId == null) {
+                return buildResponse(" Portfolio commands require account linking!\n\n" +
+                    "To use portfolio features:\n" +
+                    "1. Go to web interface: http://localhost:8080\n" +
+                    "2. Login with your wallet\n" +
+                    "3. Click 'Lấy Linking Code'\n" +
+                    "4. Send /link <code> in this chat\n" +
+                    "5. Then you can use /portfolio commands");
+            }
+            
+            List<PortfolioResponse> portfolios = portfolioService.getUserPortfolios(userId);
+            
+            if (portfolios.isEmpty()) {
+                return buildResponse("No portfolios found. Create one first with /portfolio <name>");
+            }
+            
+            PortfolioResponse firstPortfolio = portfolios.get(0);
+            AddTokenRequest request = AddTokenRequest.builder()
+                    .portfolioId(firstPortfolio.getId())
+                    .tokenSymbol(symbol)
+                    .amount(amount)
+                    .buyPrice(price)
+                    .build();
+            
+            portfolioService.addTokenToPortfolio(userId, request);
+            return buildResponse("Added " + amount + " " + symbol + " at $" + price + " to portfolio '" + firstPortfolio.getName() + "'");
+        } catch (Exception e) {
+            return buildResponse("Error adding token: " + e.getMessage());
+        }
+    }
+
+    private ChatMessageResponse handleMyPortfoliosCommand(Long chatId) {
+        try {
+            Long userId = getUserIdByChatId(chatId);
+            if (userId == null) {
+                return buildResponse("Portfolio commands require account linking!\n\n" +
+                    "To use portfolio features:\n" +
+                    "1. Go to web interface: http://localhost:8080\n" +
+                    "2. Login with your wallet\n" +
+                    "3. Click 'Lấy Linking Code'\n" +
+                    "4. Send /link <code> in this chat\n" +
+                    "5. Then you can use /portfolio commands");
+            }
+            
+            List<PortfolioResponse> portfolios = portfolioService.getUserPortfolios(userId);
+            
+            if (portfolios.isEmpty()) {
+                return buildResponse("No portfolios found. Create one with /portfolio <name>");
+            }
+            
+            StringBuilder response = new StringBuilder("Your Portfolios:\n\n");
+            for (PortfolioResponse portfolio : portfolios) {
+                response.append(portfolio.getName()).append("\n");
+                response.append("Total Value: $").append(portfolio.getTotalValue()).append("\n");
+                response.append("PnL: $").append(portfolio.getTotalPnl()).append(" (").append(portfolio.getTotalPnlPercentage()).append("%)\n");
+                response.append("Tokens: ").append(portfolio.getTokenCount()).append("\n\n");
+            }
+            
+            return buildResponse(response.toString());
+        } catch (Exception e) {
+            return buildResponse("Error fetching portfolios: " + e.getMessage());
+        }
     }
 }

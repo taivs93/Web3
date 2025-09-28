@@ -24,8 +24,8 @@ public class EthereumFeeService implements FeeService {
 
     private final Web3j web3;
 
-    private static final BigInteger DEFAULT_GAS_PRICE = BigInteger.valueOf(30_000_000_000L); // 30 Gwei
-    private static final BigInteger DEFAULT_PRIORITY_FEE = BigInteger.valueOf(2_000_000_000L); // 2 Gwei
+    private static final BigInteger DEFAULT_GAS_PRICE = BigInteger.valueOf(30_000_000_000L); 
+    private static final BigInteger DEFAULT_PRIORITY_FEE = BigInteger.valueOf(2_000_000_000L); 
 
     public EthereumFeeService(Map<String, Web3j> web3Clients) {
         this.web3 = getClient(web3Clients, "ETH");

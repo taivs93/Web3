@@ -12,11 +12,7 @@ import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.math.ec.ECPoint;
 import org.springframework.stereotype.Service;
-import org.web3j.crypto.Hash;
-import org.web3j.crypto.Keys;
-import org.web3j.crypto.Sign;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.utils.Numeric;
 
 @Service

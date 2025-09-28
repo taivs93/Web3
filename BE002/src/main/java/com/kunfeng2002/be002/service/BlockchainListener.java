@@ -2,6 +2,7 @@ package com.kunfeng2002.be002.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.kunfeng2002.be002.dto.request.WalletActivityEvent;
 import com.kunfeng2002.be002.entity.NetworkType;
 import io.reactivex.disposables.Disposable;
@@ -38,6 +39,7 @@ public class BlockchainListener {
     private final Map<String, Disposable> subscriptions = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final Map<String, AtomicReference<BigInteger>> lastProcessedBlocks = new ConcurrentHashMap<>();
+    private final Set<String> processedTransactions = ConcurrentHashMap.newKeySet();
 
 
     @Value("${app.blockchain.max-retry-attempts:3}")
@@ -64,7 +66,6 @@ public class BlockchainListener {
     @PostConstruct
     public void start() {
         web3Clients.forEach(this::startListener);
-        log.info("BlockchainListener started for networks: {}", web3Clients.keySet());
     }
 
     private void startListener(String network, Web3j web3) {
@@ -83,35 +84,29 @@ public class BlockchainListener {
                             }
                         },
                         error -> {
-                            log.error("Error while listening to {} blockchain", network, error);
                             restartListener(network, web3);
                         }
                 );
         subscriptions.put(network, subscription);
-        log.info("Started blockchain listener for network: {}", network);
     }
 
     private void restartListener(String network, Web3j web3) {
         int currentRetry = retryCounts.computeIfAbsent(network, k -> 0);
 
         if (currentRetry >= maxRetryAttempts) {
-            log.error("Failed to restart listener for {} after {} retries. Giving up.", network, maxRetryAttempts);
             return;
         }
 
         long delay = reconnectDelay * (long) (Math.pow(2, currentRetry));
         retryCounts.put(network, currentRetry + 1);
 
-        log.warn("Attempting to restart listener for {} in {}ms. Retry count: {}", network, delay, currentRetry + 1);
 
         scheduler.schedule(() -> {
             try {
                 catchUpBlocks(network, web3);
                 startListener(network, web3);
-                log.info("Restarted blockchain listener for network: {}", network);
                 retryCounts.put(network, 0);
             } catch (Exception e) {
-                log.error("Failed to restart listener for {}", network, e);
                 restartListener(network, web3);
             }
         }, delay, TimeUnit.MILLISECONDS);
@@ -124,17 +119,14 @@ public class BlockchainListener {
             BigInteger currentBlock = currentBlockResp.getBlockNumber();
 
             if (currentBlock.compareTo(lastBlock) > 0) {
-                log.info("Catching up {} from block {} to {}", network, lastBlock.add(BigInteger.ONE), currentBlock);
                 for (BigInteger i = lastBlock.add(BigInteger.ONE); i.compareTo(currentBlock) <= 0; i = i.add(BigInteger.ONE)) {
                     EthBlock block = web3.ethGetBlockByNumber(new DefaultBlockParameterNumber(i), true).send();
                     processBlock(network, block);
                     lastProcessedBlocks.get(network).set(i);
                 }
             } else {
-                log.info("No missed blocks for network {}", network);
             }
         } catch (Exception e) {
-            log.error("Failed to catch up blocks for network {}", network, e);
         }
     }
 
@@ -142,22 +134,36 @@ public class BlockchainListener {
         if (ethBlock.getBlock() == null || ethBlock.getBlock().getTransactions() == null) {
             return;
         }
+        
+        
         ethBlock.getBlock().getTransactions().forEach(transactionResult -> {
-
             Object rawTransaction = transactionResult.get();
             if (rawTransaction instanceof TransactionObject) {
                 TransactionObject transaction = (TransactionObject) rawTransaction;
                 checkAndPublish(network, transaction);
-            } else log.warn("Wrong transaction type");
-
+            } else {
+            }
         });
     }
 
     private void checkAndPublish(String network, TransactionObject transaction) {
+        String transactionHash = transaction.getHash();
+        
+        
+        if (processedTransactions.contains(transactionHash)) {
+            return;
+        }
+        
         String from = transaction.getFrom() != null ? transaction.getFrom().toLowerCase() : null;
         String to = transaction.getTo() != null ? transaction.getTo().toLowerCase() : null;
 
-        List<String> listAddresses = followService.getGloballyFollowedAddresses();
+        List<String> listAddresses;
+        try {
+            listAddresses = followService.getGloballyFollowedAddresses();
+        } catch (Exception e) {
+            return;
+        }
+        
         Set<String> followedAddresses = new HashSet<>(listAddresses);
         if (followedAddresses.isEmpty()) {
             return;
@@ -167,8 +173,32 @@ public class BlockchainListener {
         boolean toFollowed = to != null && followedAddresses.contains(to);
 
         if (fromFollowed || toFollowed) {
+            
+            processedTransactions.add(transactionHash);
+            
+            NetworkType networkType;
+            switch (network.toUpperCase()) {
+                case "ETH":
+                    networkType = NetworkType.ETHEREUM;
+                    break;
+                case "BSC":
+                    networkType = NetworkType.BSC;
+                    break;
+                case "AVALANCHE":
+                    networkType = NetworkType.AVALANCHE;
+                    break;
+                case "OPTIMISM":
+                    networkType = NetworkType.OPTIMISM;
+                    break;
+                case "ARBITRUM":
+                    networkType = NetworkType.ARBITRUM;
+                    break;
+                default:
+                    return;
+            }
+
             WalletActivityEvent event = WalletActivityEvent.builder()
-                    .network(NetworkType.valueOf(network.toUpperCase()))
+                    .network(networkType)
                     .transactionHash(transaction.getHash())
                     .fromAddress(transaction.getFrom())
                     .toAddress(transaction.getTo())
@@ -177,6 +207,7 @@ public class BlockchainListener {
                     .gasPrice(transaction.getGasPrice())
                     .timestamp(System.currentTimeMillis())
                     .build();
+            
 
 
             try {
@@ -185,9 +216,7 @@ public class BlockchainListener {
                         transaction.getHash(),
                         objectMapper.writeValueAsString(event)
                 );
-                log.info("Published wallet activity for transaction {} on network {}", transaction.getHash(), network);
             } catch (JsonProcessingException e) {
-                log.error("Failed to serialize WalletActivityEvent for transaction {}", transaction.getHash(), e);
             }
         }
     }

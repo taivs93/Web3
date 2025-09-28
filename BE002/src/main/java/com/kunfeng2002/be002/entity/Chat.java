@@ -31,6 +31,7 @@ public class Chat {
     private String description;
 
     @Column(name = "is_active", nullable = true)
+    @Builder.Default
     private Integer isActive = 1;
 
     @CreationTimestamp

@@ -35,11 +35,19 @@ public class Web3Config {
     @Bean
     public Map<String, Web3j> web3Clients() {
         Map<String, Web3j> map = new HashMap<>();
+        
         map.put("ETH", createWeb3jClient(ethereumRpc, "Ethereum"));
         map.put("BSC", createWeb3jClient(bscRpc, "BSC"));
         map.put("ARBITRUM", createWeb3jClient(arbitrumRpc, "Arbitrum"));
         map.put("OPTIMISM", createWeb3jClient(optimismRpc, "Optimism"));
-        map.put("AVALANCHE", createWeb3jClient(avalancheRpc, "Avalanche"));
+        
+        
+        Web3j avalancheClient = createWeb3jClientSafe(avalancheRpc, "Avalanche");
+        if (avalancheClient != null) {
+            map.put("AVALANCHE", avalancheClient);
+        } else {
+        }
+        
         return map;
     }
 
@@ -49,18 +57,33 @@ public class Web3Config {
                 WebSocketService wsService = new WebSocketService(new WebSocketClient(new URI(rpcUrl)), true);
                 wsService.connect();
                 Web3j web3j = Web3j.build(wsService);
-                log.info("Connected to {} (WebSocket)", networkName);
                 return web3j;
             } else {
                 HttpService httpService = new HttpService(rpcUrl);
                 httpService.addHeader("Connection", "keep-alive");
                 Web3j web3j = Web3j.build(httpService);
-                log.info("Connected to {} (HTTP)", networkName);
                 return web3j;
             }
         } catch (Exception e) {
-            log.error("Failed to connect to {} network: {}", networkName, rpcUrl, e);
             throw new RuntimeException("Failed to initialize " + networkName, e);
+        }
+    }
+
+    private Web3j createWeb3jClientSafe(String rpcUrl, String networkName) {
+        try {
+            if (rpcUrl.startsWith("wss://")) {
+                WebSocketService wsService = new WebSocketService(new WebSocketClient(new URI(rpcUrl)), true);
+                wsService.connect();
+                Web3j web3j = Web3j.build(wsService);
+                return web3j;
+            } else {
+                HttpService httpService = new HttpService(rpcUrl);
+                httpService.addHeader("Connection", "keep-alive");
+                Web3j web3j = Web3j.build(httpService);
+                return web3j;
+            }
+        } catch (Exception e) {
+            return null;
         }
     }
 }
