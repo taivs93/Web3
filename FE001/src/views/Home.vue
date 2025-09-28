@@ -63,10 +63,6 @@
         </div>
       </div>
 
-      <!-- Gas Fee Widget -->
-      <div class="mt-12">
-        <GasFeeWidget />
-      </div>
 
       <!-- Features -->
       <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -217,7 +213,6 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import ChatWidget from '@/components/ChatWidget.vue'
 import NotificationBell from '@/components/NotificationBell.vue'
-import GasFeeWidget from '@/components/GasFeeWidget.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

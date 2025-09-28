@@ -59,8 +59,8 @@ export const authAPI = {
 // Chat API
 export const chatAPI = {
   // Gửi message đến Telegram bot
-  sendMessage: (command, walletAddress, argument) => 
-    apiClient.post('/chat/send', { command, walletAddress, argument }),
+  sendMessage: (command, walletAddress, argument, network = 'bsc') => 
+    apiClient.post('/chat/send', { command, walletAddress, argument, network }),
   
   // Tạo linking code (POST)
   linkAccount: (walletAddress) => 
@@ -69,6 +69,18 @@ export const chatAPI = {
   // Tạo linking code (GET)
   getLinkAccount: (walletAddress) => 
     apiClient.get('/chat/link_account', { params: { walletAddress } }),
+  
+  // Lấy danh sách địa chỉ đang theo dõi
+  getFollowedAddresses: (walletAddress) => 
+    apiClient.get('/chat/followed-addresses', { params: { walletAddress } }),
+  
+  // Tìm kiếm coin
+  searchCoins: (query, walletAddress) => 
+    apiClient.post('/chat/search', { argument: query, walletAddress }),
+  
+  // Lấy gas estimate
+  getGasEstimate: (argument, walletAddress) => 
+    apiClient.post('/chat/gas', { argument, walletAddress }),
   
   // Health check chat service
   health: () => 
@@ -119,6 +131,29 @@ export const searchAPI = {
   // Lấy recent transactions
   getRecentTransactions: (network, limit = 10) => 
     apiClient.get('/search/transactions/recent', { params: { network, limit } })
+}
+
+// Wallet API
+export const walletAPI = {
+  // Lấy danh sách địa chỉ đang theo dõi theo chatId
+  getFollowedAddresses: (chatId) => 
+    apiClient.get('/wallet/followed-addresses', { params: { chatId } }),
+  
+  // Lấy danh sách địa chỉ được theo dõi toàn cục
+  getGlobalFollowedAddresses: () => 
+    apiClient.get('/wallet/global-addresses'),
+  
+  // Theo dõi địa chỉ ví
+  followWallet: (chatId, address) => 
+    apiClient.post('/wallet/follow', null, { params: { chatId, address } }),
+  
+  // Bỏ theo dõi địa chỉ ví
+  unfollowWallet: (chatId, address) => 
+    apiClient.post('/wallet/unfollow', null, { params: { chatId, address } }),
+  
+  // Health check wallet service
+  health: () => 
+    apiClient.get('/wallet/health')
 }
 
 // WebSocket API

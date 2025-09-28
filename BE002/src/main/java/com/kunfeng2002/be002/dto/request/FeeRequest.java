@@ -12,16 +12,15 @@ public class FeeRequest {
     private double percentile = 25.0;
 
     // Default constructor
-    public FeeRequest() {
-    }
+    public FeeRequest() {}
 
-    // Builder pattern constructor
-    public FeeRequest(BigInteger gasLimit, BigDecimal slowMultiplier, BigDecimal recommendedMultiplier,
-            BigDecimal fastMultiplier, int blockCount, double percentile) {
+    // Constructor with all parameters
+    public FeeRequest(BigInteger gasLimit, BigDecimal slowMultiplier, BigDecimal recommendedMultiplier, 
+                     BigDecimal fastMultiplier, int blockCount, double percentile) {
         this.gasLimit = gasLimit;
-        this.slowMultiplier = slowMultiplier != null ? slowMultiplier : BigDecimal.valueOf(1.0);
-        this.recommendedMultiplier = recommendedMultiplier != null ? recommendedMultiplier : BigDecimal.valueOf(1.2);
-        this.fastMultiplier = fastMultiplier != null ? fastMultiplier : BigDecimal.valueOf(1.5);
+        this.slowMultiplier = slowMultiplier;
+        this.recommendedMultiplier = recommendedMultiplier;
+        this.fastMultiplier = fastMultiplier;
         this.blockCount = blockCount;
         this.percentile = percentile;
     }
@@ -76,7 +75,11 @@ public class FeeRequest {
         this.percentile = percentile;
     }
 
-    // Builder class
+    // Builder pattern
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static class Builder {
         private BigInteger gasLimit;
         private BigDecimal slowMultiplier = BigDecimal.valueOf(1.0);
@@ -116,12 +119,8 @@ public class FeeRequest {
         }
 
         public FeeRequest build() {
-            return new FeeRequest(gasLimit, slowMultiplier, recommendedMultiplier,
-                    fastMultiplier, blockCount, percentile);
+            return new FeeRequest(gasLimit, slowMultiplier, recommendedMultiplier, 
+                                fastMultiplier, blockCount, percentile);
         }
-    }
-
-    public static Builder builder() {
-        return new Builder();
     }
 }
