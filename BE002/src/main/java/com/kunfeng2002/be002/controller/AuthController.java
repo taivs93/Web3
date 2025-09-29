@@ -60,6 +60,7 @@ public class AuthController {
                 request.getAddress(),
                 request.getUsername(),
                 request.getEmail(),
+
                 request.getAvatarUrl(),
                 request.getBio());
         return ResponseEntity.ok(ResponseDTO.builder()
