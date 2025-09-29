@@ -72,12 +72,14 @@ public class ChatController {
 
     @PostMapping("/gas")
     public ResponseEntity<ResponseDTO> getGasEstimate(@Valid @RequestBody CommandRequest request) {
-
-        CommandRequest gasRequest = CommandRequest.builder()
-                .command("/gas")
-                .argument(request.getArgument())
-                .walletAddress(request.getWalletAddress())
-                .build();
+        // Tạo CommandRequest với command "/gas" để sử dụng logic có sẵn
+        CommandRequest gasRequest = new CommandRequest(
+                "/gas",
+                request.getNetwork(),
+                request.getGasLimit(),
+                request.getWalletAddress(),
+                request.getArgument()
+        );
         
         ChatMessageResponse response = telegramBotService.processCommand(gasRequest);
         
