@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/chat")
 @RequiredArgsConstructor
@@ -69,13 +71,21 @@ public class ChatController {
     }
 
     @PostMapping("/gas")
-    public ResponseEntity<ResponseDTO> getGasEstimate(@Valid @RequestBody WebCommandRequest request) {
-        String result = telegramBotService.handleGasCommand(request.getArgument());
+    public ResponseEntity<ResponseDTO> getGasEstimate(@Valid @RequestBody CommandRequest request) {
+
+        CommandRequest gasRequest = CommandRequest.builder()
+                .command("/gas")
+                .argument(request.getArgument())
+                .walletAddress(request.getWalletAddress())
+                .build();
+        
+        ChatMessageResponse response = telegramBotService.processCommand(gasRequest);
+        
         return ResponseEntity.ok(
                 ResponseDTO.builder()
                         .status(200)
                         .message("Gas estimate completed")
-                        .data(result)
+                        .data(response.getMessage())
                         .build()
         );
     }

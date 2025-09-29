@@ -5,6 +5,7 @@ import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.event.TelegramMessageEvent;
 import com.kunfeng2002.be002.service.GasService;
 import com.kunfeng2002.be002.service.TelegramBotService;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
