@@ -6,6 +6,7 @@ import com.kunfeng2002.be002.dto.request.CommandRequest;
 import com.kunfeng2002.be002.dto.request.PortfolioRequest;
 import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.dto.response.FeeResponse;
+import com.kunfeng2002.be002.dto.response.NewCoinResponse;
 import com.kunfeng2002.be002.dto.response.PortfolioResponse;
 import com.kunfeng2002.be002.entity.Chat;
 import com.kunfeng2002.be002.entity.ChatType;
@@ -43,6 +44,7 @@ public class TelegramBotService {
     private final WebSocketNotifyService webSocketNotifyService;
     private final PortfolioService portfolioService;
     private final OnlineSearchService onlineSearchService;
+    private final BinanceApiService binanceApiService;
 
     @Transactional
     public void startBot(Long telegramUserId, Long chatId, String chatType, String title) {
@@ -306,6 +308,9 @@ public class TelegramBotService {
             case "/myportfolios":
                 return handleMyPortfoliosCommand(chatId);
 
+            case "/newcoins":
+                return handleNewCoinsCommand(chatId);
+
             default:
                 return buildResponse("Unknown command.\nType /help to see available commands.");
         }
@@ -335,6 +340,7 @@ public class TelegramBotService {
                 /portfolio <name> - Create new portfolio
                 /addtoken <symbol> <amount> <price> - Add token to portfolio
                 /myportfolios - List your portfolios
+                /newcoins - Show 20 newest coins on Binance
                 """;
     }
 
@@ -553,6 +559,34 @@ public class TelegramBotService {
             return buildResponse(response.toString());
         } catch (Exception e) {
             return buildResponse("Error fetching portfolios: " + e.getMessage());
+        }
+    }
+
+    private ChatMessageResponse handleNewCoinsCommand(Long chatId) {
+        try {
+            List<NewCoinResponse> newCoins = binanceApiService.getNewCoins();
+            
+            if (newCoins.isEmpty()) {
+                return buildResponse("No new coins found at the moment. Please try again later.");
+            }
+
+            StringBuilder response = new StringBuilder();
+            response.append("20 Newest Coins on Binance\n\n");
+            
+            for (int i = 0; i < Math.min(newCoins.size(), 20); i++) {
+                NewCoinResponse coin = newCoins.get(i);
+                response.append(String.format("%d. %s\n", i + 1, coin.getName()));
+                response.append(String.format("   Symbol: %s\n", coin.getSymbol()));
+                response.append(String.format("   Address Contract: %s\n", coin.getAddressContract()));
+                response.append(String.format("   Listed: %s\n\n", coin.getListed().toString()));
+            }
+            
+            response.append("Use /search <symbol> to get more details about any coin");
+            
+            return buildResponse(response.toString());
+        } catch (Exception e) {
+            log.error("Error fetching new coins for chat {}", chatId, e);
+            return buildResponse("Error fetching new coins. Please try again later.");
         }
     }
 }

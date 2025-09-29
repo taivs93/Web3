@@ -2,7 +2,7 @@ spring:
   application:
     name: web3-backend
   datasource:
-    url: jdbc:mysql://localhost:3306/web3_db
+    url: jdbc:mysql://localhost:3306/db_web3
     username: root
     password: 251202
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -64,24 +64,25 @@ web3j:
 telegram:
   bot:
     username: telebotweb3bot
-    token: 8396553381:AAFsgKFhWDr0QguAwUp1bmk6L5USTeX4NFs
+    token: 8396553381:AAEtH8Hwmd4XYfN3NiwPIrBQPzDYFdLfvW0
 
 network:
   ethereum:
-    rpc-url: wss://mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
+    rpc-url: wss://mainnet.infura.io/ws/v3/a6ed679e8f7c4bf7a890fba21dc4704b
     chain-id: 1
   bsc:
-    rpc-url: wss://bnb-testnet.g.alchemy.com/v2/UN7-adHP_ym7EKduai7QA
+    rpc-url: wss://bsc-mainnet.infura.io/ws/v3/a6ed679e8f7c4bf7a890fba21dc4704b
     chain-id: 97
   arbitrum:
-    rpc-url: wss://arbitrum-mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
+    rpc-url: wss://arbitrum-mainnet.infura.io/ws/v3/a6ed679e8f7c4bf7a890fba21dc4704b
     chain-id: 42161
   optimism:
-    rpc-url: wss://optimism-mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
+    rpc-url: wss://optimism-mainnet.infura.io/ws/v3/a6ed679e8f7c4bf7a890fba21dc4704b
     chain-id: 10
   avalanche:
-    rpc-url: wss://avalanche-mainnet.infura.io/ws/v3/482a21b22a5f41c0b3c1ac57b19bf0a1
+    rpc-url: wss://avalanche-mainnet.infura.io/ws/v3/a6ed679e8f7c4bf7a890fba21dc4704b
     chain-id: 43114
+
 
 app:
   cache:
@@ -108,3 +109,8 @@ coingecko:
 bscscan:
   api-key: UB8S824RSBZAISNG7NSBHQM6791D6G1VS7
   base-url: https://api.bscscan.com/api
+
+binance:
+  api-key: y1onvQDl4ZHwlkbT0NfbuFwP16QUoDiq1zpnMubOJ99YAZoZQ9swyqzTasKtURj3
+  secret-key: 43bkwRAQLAZR0hSRcLiZhnkKqym8L7q6lWMJaONC9JmbyIcai09QMsL3waPpbtf1
+  base-url: https://api.binance.com/api/v3
