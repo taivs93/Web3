@@ -21,6 +21,9 @@ export const authAPI = {
   getProfile: (address) => 
     apiClient.get('/profile', { params: { address } }),
 
+  updateProfile: (address, username, email, avatarUrl, bio) =>
+    apiClient.put('/profile', { address, username, email, avatarUrl, bio }),
+
   health: () => 
     apiClient.get('/health')
 }
@@ -121,6 +124,68 @@ export const walletAPI = {
   // Health check wallet service
   health: () =>
     apiClient.get('/wallet/health')
+}
+
+// Portfolio API
+export const portfolioAPI = {
+  // Tạo portfolio mới
+  createPortfolio: (userId, portfolioData) =>
+    apiClient.post('/portfolio', portfolioData, { headers: { 'X-User-Id': userId } }),
+
+  // Lấy danh sách portfolio của user
+  getUserPortfolios: (userId) =>
+    apiClient.get('/portfolio', { headers: { 'X-User-Id': userId } }),
+
+  // Lấy chi tiết portfolio
+  getPortfolio: (userId, portfolioId) =>
+    apiClient.get(`/portfolio/${portfolioId}`, { headers: { 'X-User-Id': userId } }),
+
+  // Thêm token vào portfolio
+  addTokenToPortfolio: (userId, tokenData) =>
+    apiClient.post('/portfolio/tokens', tokenData, { headers: { 'X-User-Id': userId } }),
+
+  // Xóa token khỏi portfolio
+  removeTokenFromPortfolio: (userId, portfolioId, tokenId) =>
+    apiClient.delete(`/portfolio/${portfolioId}/tokens/${tokenId}`, { headers: { 'X-User-Id': userId } }),
+
+  // Refresh giá token trong portfolio
+  refreshPortfolio: (userId, portfolioId) =>
+    apiClient.put(`/portfolio/${portfolioId}/refresh`, {}, { headers: { 'X-User-Id': userId } }),
+
+  // Xóa portfolio
+  deletePortfolio: (userId, portfolioId) =>
+    apiClient.delete(`/portfolio/${portfolioId}`, { headers: { 'X-User-Id': userId } })
+}
+
+// Coin API
+export const coinAPI = {
+  // Lấy tất cả coins
+  getAllCoins: () =>
+    apiClient.get('/coins'),
+
+  // Lấy coin theo địa chỉ
+  getCoinByAddress: (address) =>
+    apiClient.get(`/coins/${address}`),
+
+  // Lấy coin theo symbol
+  getCoinsBySymbol: (symbol) =>
+    apiClient.get(`/coins/symbol/${symbol}`),
+
+  // Tìm kiếm coin
+  searchCoins: (query) =>
+    apiClient.get('/coins/search', { params: { q: query } }),
+
+  // Tìm kiếm coin online
+  searchCoinsOnline: (query) =>
+    apiClient.get('/coins/search-online', { params: { q: query } }),
+
+  // Tìm kiếm địa chỉ online
+  searchAddressOnline: (address) =>
+    apiClient.get('/coins/search-address-online', { params: { address } }),
+
+  // Test search
+  testSearch: () =>
+    apiClient.get('/coins/test-search')
 }
 
 // WebSocket API

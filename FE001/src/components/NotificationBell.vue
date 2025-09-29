@@ -218,6 +218,36 @@ const handleWebSocketNotification = (event) => {
         read: false
       }
       break
+    case 'portfolio-update':
+      notification = {
+        id: Date.now() + Math.random(),
+        type: 'portfolio',
+        title: 'Cập nhật Portfolio',
+        message: `Portfolio "${data.portfolioName}" đã được cập nhật`,
+        timestamp: new Date(),
+        read: false
+      }
+      break
+    case 'gas-update':
+      notification = {
+        id: Date.now() + Math.random(),
+        type: 'gas',
+        title: 'Cập nhật Gas Fee',
+        message: `Gas fee ${data.network} đã được cập nhật`,
+        timestamp: new Date(),
+        read: false
+      }
+      break
+    case 'text':
+      notification = {
+        id: Date.now() + Math.random(),
+        type: 'text',
+        title: 'Tin nhắn mới',
+        message: data,
+        timestamp: new Date(),
+        read: false
+      }
+      break
   }
   
   if (notification) {

@@ -302,22 +302,36 @@ const newToken = ref({
 
 const loadPortfolios = async () => {
   try {
-    const response = await portfolioAPI.getUserPortfolios()
-    portfolios.value = response.data
+    if (!authStore.user?.id) {
+      console.error('User ID not found')
+      return
+    }
+    
+    const response = await portfolioAPI.getUserPortfolios(authStore.user.id)
+    portfolios.value = response.data || []
   } catch (error) {
     console.error('Error loading portfolios:', error)
+    alert('Lỗi tải danh sách portfolio: ' + (error.response?.data?.message || error.message))
   }
 }
 
 const createPortfolio = async () => {
   try {
     isLoading.value = true
-    await portfolioAPI.createPortfolio(newPortfolio.value)
+    
+    if (!authStore.user?.id) {
+      alert('Vui lòng đăng nhập để tạo portfolio')
+      return
+    }
+    
+    const response = await portfolioAPI.createPortfolio(authStore.user.id, newPortfolio.value)
     await loadPortfolios()
     showCreateModal.value = false
     newPortfolio.value = { name: '', description: '' }
+    alert('Tạo portfolio thành công!')
   } catch (error) {
     console.error('Error creating portfolio:', error)
+    alert('Lỗi tạo portfolio: ' + (error.response?.data?.message || error.message))
   } finally {
     isLoading.value = false
   }
@@ -326,18 +340,27 @@ const createPortfolio = async () => {
 const addToken = async () => {
   try {
     isLoading.value = true
+    
+    if (!authStore.user?.id) {
+      alert('Vui lòng đăng nhập để thêm token')
+      return
+    }
+    
     const tokenData = {
       portfolioId: selectedPortfolio.value.id,
       tokenSymbol: newToken.value.symbol.toUpperCase(),
       amount: parseFloat(newToken.value.amount),
       buyPrice: parseFloat(newToken.value.buyPrice)
     }
-    await portfolioAPI.addToken(tokenData)
+    
+    await portfolioAPI.addTokenToPortfolio(authStore.user.id, tokenData)
     await loadPortfolios()
     showAddTokenModal.value = false
     newToken.value = { symbol: '', amount: '', buyPrice: '' }
+    alert('Thêm token thành công!')
   } catch (error) {
     console.error('Error adding token:', error)
+    alert('Lỗi thêm token: ' + (error.response?.data?.message || error.message))
   } finally {
     isLoading.value = false
   }
@@ -349,20 +372,34 @@ const viewPortfolio = (portfolio) => {
 
 const refreshPortfolio = async (portfolioId) => {
   try {
-    await portfolioAPI.refreshPortfolio(portfolioId)
+    if (!authStore.user?.id) {
+      alert('Vui lòng đăng nhập để refresh portfolio')
+      return
+    }
+    
+    await portfolioAPI.refreshPortfolio(authStore.user.id, portfolioId)
     await loadPortfolios()
+    alert('Refresh portfolio thành công!')
   } catch (error) {
     console.error('Error refreshing portfolio:', error)
+    alert('Lỗi refresh portfolio: ' + (error.response?.data?.message || error.message))
   }
 }
 
 const deletePortfolio = async (portfolioId) => {
-  if (confirm('Are you sure you want to delete this portfolio?')) {
+  if (confirm('Bạn có chắc chắn muốn xóa portfolio này?')) {
     try {
-      await portfolioAPI.deletePortfolio(portfolioId)
+      if (!authStore.user?.id) {
+        alert('Vui lòng đăng nhập để xóa portfolio')
+        return
+      }
+      
+      await portfolioAPI.deletePortfolio(authStore.user.id, portfolioId)
       await loadPortfolios()
+      alert('Xóa portfolio thành công!')
     } catch (error) {
       console.error('Error deleting portfolio:', error)
+      alert('Lỗi xóa portfolio: ' + (error.response?.data?.message || error.message))
     }
   }
 }

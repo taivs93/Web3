@@ -117,8 +117,8 @@
 
 <script setup>
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { chatAPI } from '@/services/api'
+import { useAuthStore } from '../stores/auth'
+import { chatAPI } from '../services/api'
 
 const authStore = useAuthStore()
 

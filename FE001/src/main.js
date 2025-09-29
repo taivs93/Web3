@@ -9,4 +9,8 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
+
+// Debug
+console.log('Vue app created')
+
 app.mount('#app')

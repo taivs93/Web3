@@ -1,32 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-100">
-    <nav class="bg-white shadow">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <h1 class="text-xl font-bold text-gray-900">Web3 Chat Bot</h1>
-          </div>
-          <div class="flex items-center space-x-4">
-            <router-link
-              to="/portfolio"
-              class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              Portfolio
-            </router-link>
-            <span class="text-sm text-gray-600">{{ authStore.shortAddress }}</span>
-            <NotificationBell />
-            <button
-              @click="logout"
-              class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
-            >
-              Đăng xuất
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2">
           <div class="bg-white rounded-lg shadow-lg mb-6">
@@ -137,7 +110,6 @@
         </div>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -146,7 +118,6 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { chatAPI } from '../services/api'
 import simpleWebSocketService from '../services/simple-websocket'
-import NotificationBell from '../components/NotificationBell.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -164,7 +135,8 @@ const quickCommands = ref([
   '/help',
   '/follow',
   '/unfollow',
-  '/list'
+  '/list',
+  '/clear'
 ])
 
 const sendMessage = async () => {
@@ -200,6 +172,13 @@ const addMessage = (sender, text) => {
 const processCommand = async (command) => {
   if (!authStore.isAuthenticated) {
     addMessage('bot', 'Vui lòng đăng nhập để sử dụng chat bot!')
+    return
+  }
+  
+  // Xử lý lệnh /clear
+  if (command.trim() === '/clear') {
+    messages.value = []
+    addMessage('bot', 'Đã xóa tất cả tin nhắn!')
     return
   }
   

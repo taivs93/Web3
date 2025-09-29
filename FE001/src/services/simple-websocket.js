@@ -76,6 +76,8 @@ class SimpleWebSocketService {
   }
 
   handleMessage(data) {
+    console.log('WebSocket message received:', data)
+    
     if (data.type === 'notification') {
       window.dispatchEvent(new CustomEvent('websocket-notification', {
         detail: { type: 'notification', data: data.data }
@@ -84,8 +86,22 @@ class SimpleWebSocketService {
       window.dispatchEvent(new CustomEvent('websocket-notification', {
         detail: { type: 'wallet-activity', data: data.data }
       }))
+    } else if (data.type === 'price-alert') {
+      window.dispatchEvent(new CustomEvent('websocket-notification', {
+        detail: { type: 'price-alert', data: data.data }
+      }))
+    } else if (data.type === 'portfolio-update') {
+      window.dispatchEvent(new CustomEvent('websocket-notification', {
+        detail: { type: 'portfolio-update', data: data.data }
+      }))
+    } else if (data.type === 'gas-update') {
+      window.dispatchEvent(new CustomEvent('websocket-notification', {
+        detail: { type: 'gas-update', data: data.data }
+      }))
     } else if (data.type === 'registered') {
+      console.log('WebSocket registered successfully')
     } else if (data.type === 'welcome') {
+      console.log('WebSocket welcome message:', data.message)
     } else {
       window.dispatchEvent(new CustomEvent('websocket-notification', {
         detail: { type: 'message', data: data }

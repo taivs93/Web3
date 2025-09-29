@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="max-w-4xl mx-auto">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Loading State -->
       <div v-if="authStore.isLoading" class="text-center py-12">
         <svg class="animate-spin h-12 w-12 text-indigo-600 mx-auto" fill="none" viewBox="0 0 24 24">
@@ -178,14 +177,12 @@
         </div>
       </div>
     </div>
-  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import AppLayout from '../components/AppLayout.vue'
 import { chatAPI } from '@/services/api'
 
 const router = useRouter()
