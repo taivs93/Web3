@@ -4,40 +4,59 @@ import { useAuthStore } from '../stores/auth'
 export function useAuthInit() {
   const authStore = useAuthStore()
 
-  onMounted(async () => {
+  // Khôi phục ngay lập tức khi import (không cần onMounted)
+  const initAuth = async () => {
     try {
+      console.log('Starting auth initialization...')
+      
       // Khôi phục trạng thái đăng nhập từ localStorage
       const restored = authStore.restoreFromLocalStorage()
+      console.log('Restored from localStorage:', restored)
+      console.log('Current auth state:', {
+        isAuthenticated: authStore.isAuthenticated,
+        walletAddress: authStore.walletAddress,
+        user: authStore.user
+      })
       
       if (restored && authStore.walletAddress) {
         // Kiểm tra xem ví có còn kết nối không
         if (window.ethereum) {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' })
-          
-          if (accounts.length > 0 && accounts[0].toLowerCase() === authStore.walletAddress.toLowerCase()) {
-            // Ví vẫn còn kết nối, khôi phục user profile
-            try {
-              await authStore.getUserProfile()
-              console.log('Đã khôi phục trạng thái đăng nhập thành công!')
-            } catch (profileError) {
-              console.warn('Không thể tải thông tin profile, nhưng vẫn giữ trạng thái đăng nhập')
+          try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+            console.log('MetaMask accounts:', accounts)
+            
+            if (accounts.length > 0 && accounts[0].toLowerCase() === authStore.walletAddress.toLowerCase()) {
+              // Ví vẫn còn kết nối, khôi phục user profile
+              try {
+                await authStore.getUserProfile()
+                console.log('Đã khôi phục trạng thái đăng nhập thành công!')
+              } catch (profileError) {
+                console.warn('Không thể tải thông tin profile, nhưng vẫn giữ trạng thái đăng nhập')
+              }
+            } else {
+              // Ví đã ngắt kết nối, đăng xuất
+              console.log('Ví đã ngắt kết nối, đăng xuất...')
+              authStore.logout()
             }
-          } else {
-            // Ví đã ngắt kết nối, đăng xuất
-            console.log('Ví đã ngắt kết nối, đăng xuất...')
-            authStore.logout()
+          } catch (ethError) {
+            console.warn('Error checking MetaMask accounts:', ethError)
+            // Vẫn giữ trạng thái đăng nhập nếu có lỗi với MetaMask
           }
         } else {
-          // MetaMask không có, đăng xuất
-          console.log('MetaMask không có, đăng xuất...')
-          authStore.logout()
+          // MetaMask không có, nhưng vẫn giữ trạng thái đăng nhập
+          console.log('MetaMask không có, nhưng vẫn giữ trạng thái đăng nhập')
         }
+      } else {
+        console.log('Không có dữ liệu đăng nhập trong localStorage')
       }
     } catch (error) {
       console.error('Error during auth initialization:', error)
-      // Có lỗi, đăng xuất để đảm bảo an toàn
-      authStore.logout()
+      // Không đăng xuất ngay, chỉ log lỗi
     }
+  }
+
+  onMounted(async () => {
+    await initAuth()
 
     // Lắng nghe sự kiện thay đổi tài khoản MetaMask
     if (window.ethereum) {

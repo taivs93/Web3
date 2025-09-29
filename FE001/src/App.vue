@@ -17,27 +17,72 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useAuthInit } from './composables/useAuthInit'
+import { useAuthStore } from './stores/auth'
 import AppLayout from './components/AppLayout.vue'
 
 const isInitializing = ref(true)
+const authStore = useAuthStore()
 
 onMounted(async () => {
   console.log('App mounted, starting auth initialization...')
+  
+  // Timeout để tránh loading quá lâu
+  const timeoutId = setTimeout(() => {
+    console.log('Auth initialization timeout, ending loading...')
+    isInitializing.value = false
+  }, 3000) // 3 giây timeout
+  
   try {
-    // Khởi tạo trạng thái đăng nhập với timeout
-    const initPromise = useAuthInit()
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), 5000)
-    )
+    // Khôi phục ngay lập tức
+    const restored = authStore.restoreFromLocalStorage()
+    console.log('Immediate restore result:', restored)
     
-    await Promise.race([initPromise, timeoutPromise])
-    console.log('Auth initialization completed successfully')
+    if (restored && authStore.walletAddress) {
+      // Kiểm tra MetaMask connection với timeout
+      if (window.ethereum) {
+        try {
+          const accountsPromise = window.ethereum.request({ method: 'eth_accounts' })
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('MetaMask timeout')), 2000)
+          )
+          
+          const accounts = await Promise.race([accountsPromise, timeoutPromise])
+          
+          if (accounts.length > 0 && accounts[0].toLowerCase() === authStore.walletAddress.toLowerCase()) {
+            // Ví vẫn kết nối, load profile với timeout
+            try {
+              const profilePromise = authStore.getUserProfile()
+              const profileTimeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Profile load timeout')), 2000)
+              )
+              
+              await Promise.race([profilePromise, profileTimeoutPromise])
+              console.log('Profile loaded successfully')
+            } catch (profileError) {
+              console.warn('Profile load failed, but keeping auth state:', profileError.message)
+            }
+          } else {
+            console.log('Wallet disconnected, logging out')
+            authStore.logout()
+          }
+        } catch (ethError) {
+          console.warn('MetaMask check failed, keeping auth state:', ethError.message)
+        }
+      }
+    }
+    
+    console.log('Auth initialization completed')
   } catch (error) {
-    console.warn('Auth initialization timeout or error:', error)
+    console.warn('Auth initialization error:', error)
   } finally {
-    // Kết thúc loading
+    // Clear timeout và kết thúc loading
+    clearTimeout(timeoutId)
     console.log('Setting isInitializing to false')
+    console.log('Final auth state:', {
+      isAuthenticated: authStore.isAuthenticated,
+      walletAddress: authStore.walletAddress,
+      user: authStore.user
+    })
     isInitializing.value = false
   }
 })
