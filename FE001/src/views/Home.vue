@@ -145,7 +145,7 @@
                 </div>
                 <p class="text-sm text-gray-600">Đăng nhập bằng chữ ký wallet</p>
               </div>
-              
+
               <div class="p-4 bg-blue-50 rounded-lg">
                 <div class="flex items-center mb-2">
                   <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-mono">GET</span>
@@ -154,7 +154,7 @@
                 <p class="text-sm text-gray-600">Lấy thông tin profile user</p>
               </div>
             </div>
-            
+
             <div class="space-y-4">
               <div class="p-4 bg-yellow-50 rounded-lg">
                 <div class="flex items-center mb-2">
@@ -163,7 +163,7 @@
                 </div>
                 <p class="text-sm text-gray-600">Cập nhật thông tin profile</p>
               </div>
-              
+
               <div class="p-4 bg-purple-50 rounded-lg">
                 <div class="flex items-center mb-2">
                   <span class="bg-purple-500 text-white px-2 py-1 rounded text-xs font-mono">GET</span>
@@ -171,7 +171,7 @@
                 </div>
                 <p class="text-sm text-gray-600">Kiểm tra trạng thái server</p>
               </div>
-              
+
               <div class="p-4 bg-orange-50 rounded-lg">
                 <div class="flex items-center mb-2">
                   <span class="bg-orange-500 text-white px-2 py-1 rounded text-xs font-mono">GET</span>
@@ -179,7 +179,7 @@
                 </div>
                 <p class="text-sm text-gray-600">Lấy ước tính phí gas</p>
               </div>
-              
+
               <div class="p-4 bg-teal-50 rounded-lg">
                 <div class="flex items-center mb-2">
                   <span class="bg-teal-500 text-white px-2 py-1 rounded text-xs font-mono">POST</span>

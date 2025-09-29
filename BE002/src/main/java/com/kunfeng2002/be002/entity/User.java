@@ -46,6 +46,7 @@ public class User {
     private String bio;
 
     @Column(name = "is_active")
+    @Builder.Default
     private Integer isActive = 1;
 
     @Column(name = "last_login_at")

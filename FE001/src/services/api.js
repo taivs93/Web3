@@ -2,7 +2,6 @@ import axios from 'axios'
 
 const API_BASE_URL = 'http://localhost:8080/api'
 
-// Tạo axios instance với config mặc định
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -11,58 +10,26 @@ const apiClient = axios.create({
   }
 })
 
-// Request interceptor để thêm auth token nếu có
-apiClient.interceptors.request.use(
-  (config) => {
-    // Có thể thêm token vào header nếu cần
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
 
-// Response interceptor để xử lý lỗi chung
-apiClient.interceptors.response.use(
-  (response) => {
-    return response
-  },
-  (error) => {
-    console.error('API Error:', error.response?.data || error.message)
-    return Promise.reject(error)
-  }
-)
-
-// Auth API
 export const authAPI = {
-  // Đăng nhập với Web3 signature
   login: (address, message, signature) => 
     apiClient.post('/login', { address, message, signature }),
-  
-  // Lấy nonce cho địa chỉ ví
+
   getNonce: (address) => 
     apiClient.get('/nonce', { params: { address } }),
-  
-  // Lấy thông tin profile user
+
   getProfile: (address) => 
     apiClient.get('/profile', { params: { address } }),
-  
-  // Cập nhật profile user
-  updateProfile: (data) => 
-    apiClient.put('/profile', data),
-  
-  // Health check
+
   health: () => 
     apiClient.get('/health')
 }
 
-// Chat API
+
 export const chatAPI = {
-  // Gửi message đến Telegram bot
-  sendMessage: (command, walletAddress, argument, network = 'bsc') => 
-    apiClient.post('/chat/send', { command, walletAddress, argument, network }),
-  
-  // Tạo linking code (POST)
+  sendMessage: (command, walletAddress, argument) =>
+    apiClient.post('/chat/send', { command, walletAddress, argument }),
+
   linkAccount: (walletAddress) => 
     apiClient.post('/chat/link-account', { walletAddress }),
   
@@ -71,17 +38,17 @@ export const chatAPI = {
     apiClient.get('/chat/link_account', { params: { walletAddress } }),
   
   // Lấy danh sách địa chỉ đang theo dõi
-  getFollowedAddresses: (walletAddress) => 
+  getFollowedAddresses: (walletAddress) =>
     apiClient.get('/chat/followed-addresses', { params: { walletAddress } }),
-  
+
   // Tìm kiếm coin
-  searchCoins: (query, walletAddress) => 
+  searchCoins: (query, walletAddress) =>
     apiClient.post('/chat/search', { argument: query, walletAddress }),
-  
+
   // Lấy gas estimate
-  getGasEstimate: (argument, walletAddress) => 
+  getGasEstimate: (argument, walletAddress) =>
     apiClient.post('/chat/gas', { argument, walletAddress }),
-  
+
   // Health check chat service
   health: () => 
     apiClient.get('/chat/health')
@@ -90,69 +57,69 @@ export const chatAPI = {
 // Gas API
 export const gasAPI = {
   // Lấy ước tính phí gas cho network
-  getGasEstimate: (network, request = null) => 
+  getGasEstimate: (network, request = null) =>
     apiClient.post(`/gas/estimate/${network}`, request),
-  
+
   // Lấy ước tính phí gas nhanh với default values
-  getGasEstimateQuick: (network) => 
+  getGasEstimateQuick: (network) =>
     apiClient.get(`/gas/estimate/${network}`)
 }
 
 // Search API
 export const searchAPI = {
   // Tìm kiếm tổng quát
-  generalSearch: (query, network, page = 0, size = 20) => 
+  generalSearch: (query, network, page = 0, size = 20) =>
     apiClient.post('/search/general', { query, network, page, size }),
-  
+
   // Tìm kiếm block
-  searchBlock: (query, network) => 
+  searchBlock: (query, network) =>
     apiClient.get('/search/block', { params: { query, network } }),
-  
+
   // Tìm kiếm transaction
-  searchTransaction: (query, network) => 
+  searchTransaction: (query, network) =>
     apiClient.get('/search/transaction', { params: { query, network } }),
-  
+
   // Tìm kiếm address
-  searchAddress: (query, network, page = 0, size = 20) => 
+  searchAddress: (query, network, page = 0, size = 20) =>
     apiClient.get('/search/address', { params: { query, network, page, size } }),
-  
+
   // Tìm kiếm token
-  searchToken: (query, network, page = 0, size = 20) => 
+  searchToken: (query, network, page = 0, size = 20) =>
     apiClient.get('/search/token', { params: { query, network, page, size } }),
-  
+
   // Lấy thống kê network
-  getNetworkStats: (network) => 
+  getNetworkStats: (network) =>
     apiClient.get(`/search/stats/${network}`),
-  
+
   // Lấy top tokens
-  getTopTokens: (network, limit = 10) => 
+  getTopTokens: (network, limit = 10) =>
     apiClient.get('/search/tokens/top', { params: { network, limit } }),
-  
+
   // Lấy recent transactions
-  getRecentTransactions: (network, limit = 10) => 
+  getRecentTransactions: (network, limit = 10) =>
     apiClient.get('/search/transactions/recent', { params: { network, limit } })
 }
 
 // Wallet API
 export const walletAPI = {
   // Lấy danh sách địa chỉ đang theo dõi theo chatId
-  getFollowedAddresses: (chatId) => 
+  getFollowedAddresses: (chatId) =>
     apiClient.get('/wallet/followed-addresses', { params: { chatId } }),
-  
+
   // Lấy danh sách địa chỉ được theo dõi toàn cục
-  getGlobalFollowedAddresses: () => 
+  getGlobalFollowedAddresses: () =>
     apiClient.get('/wallet/global-addresses'),
-  
+
   // Theo dõi địa chỉ ví
-  followWallet: (chatId, address) => 
+  followWallet: (chatId, address) =>
     apiClient.post('/wallet/follow', null, { params: { chatId, address } }),
-  
+
   // Bỏ theo dõi địa chỉ ví
-  unfollowWallet: (chatId, address) => 
+  unfollowWallet: (chatId, address) =>
     apiClient.post('/wallet/unfollow', null, { params: { chatId, address } }),
-  
+
   // Health check wallet service
-  health: () => 
+  health: () =>
     apiClient.get('/wallet/health')
 }
 

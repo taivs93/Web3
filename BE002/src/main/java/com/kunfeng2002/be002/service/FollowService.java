@@ -3,6 +3,7 @@ package com.kunfeng2002.be002.service;
 import com.kunfeng2002.be002.entity.Chat;
 import com.kunfeng2002.be002.entity.Follow;
 import com.kunfeng2002.be002.entity.Wallet;
+import com.kunfeng2002.be002.exception.DataNotFoundException;
 import com.kunfeng2002.be002.repository.ChatRepository;
 import com.kunfeng2002.be002.repository.FollowRepository;
 import com.kunfeng2002.be002.repository.WalletRepository;
@@ -31,7 +32,7 @@ public class FollowService {
     @Transactional
     public void follow(Long chatId, String address) {
         Chat chat = chatRepository.findByChatId(chatId)
-                .orElseThrow(() -> new IllegalStateException("Chat not found"));
+                .orElseThrow(() -> new DataNotFoundException("Chat not found"));
 
         String normalized = address.toLowerCase();
         Wallet wallet = walletRepository.findByAddress(normalized)
@@ -43,7 +44,6 @@ public class FollowService {
                 ));
 
         if (followRepository.existsByChatAndWallet(chat, wallet)) {
-            log.info("Chat {} already following {}", chatId, normalized);
             return;
         }
 
@@ -52,7 +52,6 @@ public class FollowService {
                 .wallet(wallet)
                 .build());
 
-        log.info("Chat {} started following {}", chatId, normalized);
         clearGlobalCache();
         clearChatCache(chatId);
     }
@@ -60,45 +59,68 @@ public class FollowService {
     @Transactional
     public void unfollow(Long chatId, String address) {
         Chat chat = chatRepository.findByChatId(chatId)
-                .orElseThrow(() -> new IllegalStateException("Chat not found"));
+                .orElseThrow(() -> new DataNotFoundException("Chat not found"));
 
         Wallet wallet = walletRepository.findByAddress(address.toLowerCase())
-                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+                .orElseThrow(() -> new DataNotFoundException("Wallet not found"));
 
         followRepository.deleteByChatAndWallet(chat, wallet);
-        log.info("Chat {} stopped following {}", chatId, wallet.getAddress());
         clearGlobalCache();
         clearChatCache(chatId);
     }
 
     public List<String> getFollowedAddressesByChatId(Long chatId) {
-        String cacheKey = CHAT_KEY_PREFIX + chatId;
-        List<String> cached = (List<String>) redisTemplate.opsForValue().get(cacheKey);
-        if (cached != null) {
-            return cached;
-        }
+        try {
+            String cacheKey = CHAT_KEY_PREFIX + chatId;
+            @SuppressWarnings("unchecked")
+            List<String> cached = (List<String>) redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return cached;
+            }
 
-        List<String> addresses = followRepository.findWalletAddressesByChatId(chatId);
-        redisTemplate.opsForValue().set(cacheKey, addresses, 15, TimeUnit.MINUTES);
-        return addresses;
+            List<String> addresses = followRepository.findWalletAddressesByChatId(chatId);
+            try {
+                redisTemplate.opsForValue().set(cacheKey, addresses, 15, TimeUnit.MINUTES);
+            } catch (Exception e) {
+            }
+            return addresses;
+        } catch (Exception e) {
+
+            return followRepository.findWalletAddressesByChatId(chatId);
+        }
     }
 
     public List<String> getGloballyFollowedAddresses() {
-        List<String> cached = (List<String>) redisTemplate.opsForValue().get(GLOBAL_KEY);
-        if (cached != null) {
-            return cached;
-        }
+        try {
+            @SuppressWarnings("unchecked")
+            List<String> cached = (List<String>) redisTemplate.opsForValue().get(GLOBAL_KEY);
+            if (cached != null) {
+                return cached;
+            }
 
-        List<String> addresses = followRepository.findAllWalletAddresses();
-        redisTemplate.opsForValue().set(GLOBAL_KEY, addresses, 15, TimeUnit.MINUTES);
-        return addresses;
+            List<String> addresses = followRepository.findAllWalletAddresses();
+            try {
+                redisTemplate.opsForValue().set(GLOBAL_KEY, addresses, 15, TimeUnit.MINUTES);
+            } catch (Exception e) {
+            }
+            return addresses;
+        } catch (Exception e) {
+
+            return followRepository.findAllWalletAddresses();
+        }
     }
 
     private void clearGlobalCache() {
-        redisTemplate.delete(GLOBAL_KEY);
+        try {
+            redisTemplate.delete(GLOBAL_KEY);
+        } catch (Exception e) {
+        }
     }
 
     private void clearChatCache(Long chatId) {
-        redisTemplate.delete(CHAT_KEY_PREFIX + chatId);
+        try {
+            redisTemplate.delete(CHAT_KEY_PREFIX + chatId);
+        } catch (Exception e) {
+        }
     }
 }

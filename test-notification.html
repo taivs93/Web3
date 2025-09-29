@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notification</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Test WebSocket Notifications</h1>
+    
+    <div>
+        <button onclick="testSimpleNotification()">Test Simple Notification</button>
+        <button onclick="testWalletActivity()">Test Wallet Activity</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div id="logs" class="log"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        async function testSimpleNotification() {
+            try {
+                const response = await fetch('http://localhost:8080/api/test/notify/1?message=Hello%20World', {
+                    method: 'POST'
+                });
+                const result = await response.text();
+                log(`✅ Simple notification sent: ${result}`, 'success');
+            } catch (error) {
+                log(`❌ Failed to send simple notification: ${error}`, 'error');
+            }
+        }
+        
+        async function testWalletActivity() {
+            try {
+                const response = await fetch('http://localhost:8080/api/test/wallet-activity/1', {
+                    method: 'POST'
+                });
+                const result = await response.text();
+                log(`✅ Wallet activity sent: ${result}`, 'success');
+            } catch (error) {
+                log(`❌ Failed to send wallet activity: ${error}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        // Test WebSocket connection
+        let ws = null;
+        
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('WebSocket already connected', 'info');
+                return;
+            }
+            
+            const wsUrl = 'ws://localhost:8080/api/ws';
+            log(`Connecting to ${wsUrl}`, 'info');
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                log('✅ WebSocket connected', 'success');
+                
+                // Send registration
+                const registerMessage = {
+                    type: 'register',
+                    userId: 1
+                };
+                ws.send(JSON.stringify(registerMessage));
+                log(`📤 Sent registration: ${JSON.stringify(registerMessage)}`, 'info');
+            };
+            
+            ws.onmessage = function(event) {
+                log(`📨 Received: ${event.data}`, 'info');
+                
+                try {
+                    const data = JSON.parse(event.data);
+                    log(`📊 Parsed data: ${JSON.stringify(data, null, 2)}`, 'info');
+                    
+                    if (data.type === 'registered') {
+                        log('✅ User registered successfully', 'success');
+                    } else if (data.type === 'notification') {
+                        log(`🔔 Notification: ${data.data}`, 'success');
+                    } else if (data.type === 'wallet-activity') {
+                        log(`💰 Wallet Activity: ${JSON.stringify(data.data, null, 2)}`, 'success');
+                        
+                        // Test parsing wallet activity
+                        const walletData = data.data;
+                        log(`📊 Network: ${walletData.networkAsString || walletData.network}`, 'info');
+                        log(`📊 From: ${walletData.fromAddress}`, 'info');
+                        log(`📊 To: ${walletData.toAddress}`, 'info');
+                        log(`📊 Value: ${walletData.value}`, 'info');
+                    }
+                } catch (e) {
+                    log(`📄 Text message: ${event.data}`, 'info');
+                }
+            };
+            
+            ws.onclose = function() {
+                log('🔌 WebSocket disconnected', 'error');
+            };
+            
+            ws.onerror = function(error) {
+                log(`❌ WebSocket error: ${error}`, 'error');
+            };
+        }
+        
+        // Auto-connect on page load
+        window.onload = function() {
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>

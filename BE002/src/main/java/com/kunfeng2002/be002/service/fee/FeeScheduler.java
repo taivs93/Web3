@@ -1,4 +1,4 @@
-// FeeScheduler.java
+
 package com.kunfeng2002.be002.service.fee;
 
 import com.kunfeng2002.be002.dto.request.FeeRequest;
@@ -21,7 +21,7 @@ public class FeeScheduler {
     public void refreshAllFees() {
         FeeRequest baseRequest = FeeRequest.builder()
                 .blockCount(5)
-                .percentile(25)
+                .percentile(25.0)
                 .build();
 
         for (FeeService service : feeServices) {
