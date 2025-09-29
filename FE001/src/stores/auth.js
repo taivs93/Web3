@@ -33,17 +33,19 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    // Lưu state vào localStorage
-    saveToLocalStorage() {
-      if (typeof window !== 'undefined') {
-        const state = {
-          user: this.user,
-          walletAddress: this.walletAddress,
-          isConnected: this.isConnected
-        }
-        localStorage.setItem('auth-store', JSON.stringify(state))
-      }
-    },
+            // Lưu state vào localStorage
+            saveToLocalStorage() {
+              if (typeof window !== 'undefined') {
+                const state = {
+                  user: this.user,
+                  walletAddress: this.walletAddress,
+                  isConnected: this.isConnected
+                }
+                console.log('Saving to localStorage:', state)
+                localStorage.setItem('auth-store', JSON.stringify(state))
+                console.log('Saved to localStorage successfully')
+              }
+            },
 
     // Xóa dữ liệu từ localStorage
     clearFromLocalStorage() {
@@ -52,26 +54,31 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // Khôi phục từ localStorage
-    restoreFromLocalStorage() {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem('auth-store')
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved)
-            this.user = parsed.user
-            this.walletAddress = parsed.walletAddress
-            this.isConnected = parsed.isConnected
-            return true
-          } catch (error) {
-            console.error('Error parsing saved auth data:', error)
-            this.clearFromLocalStorage()
-            return false
-          }
-        }
-      }
-      return false
-    },
+            // Khôi phục từ localStorage
+            restoreFromLocalStorage() {
+              if (typeof window !== 'undefined') {
+                const saved = localStorage.getItem('auth-store')
+                console.log('Restoring from localStorage:', saved)
+                if (saved) {
+                  try {
+                    const parsed = JSON.parse(saved)
+                    console.log('Parsed auth data:', parsed)
+                    this.user = parsed.user
+                    this.walletAddress = parsed.walletAddress
+                    this.isConnected = parsed.isConnected
+                    console.log('Auth state restored successfully')
+                    return true
+                  } catch (error) {
+                    console.error('Error parsing saved auth data:', error)
+                    this.clearFromLocalStorage()
+                    return false
+                  }
+                } else {
+                  console.log('No saved auth data found in localStorage')
+                }
+              }
+              return false
+            },
 
     async connectWallet() {
       try {
