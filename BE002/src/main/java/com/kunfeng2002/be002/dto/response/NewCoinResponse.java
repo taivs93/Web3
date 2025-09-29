@@ -8,8 +8,6 @@ public class NewCoinResponse {
     private String addressContract;
     private LocalDateTime listed;
 
-    public NewCoinResponse() {}
-
     public NewCoinResponse(String name, String symbol, String addressContract, LocalDateTime listed) {
         this.name = name;
         this.symbol = symbol;

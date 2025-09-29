@@ -573,7 +573,7 @@ public class TelegramBotService {
             StringBuilder response = new StringBuilder();
             response.append("20 Newest Coins on Binance\n\n");
             
-            for (int i = 0; i < Math.min(newCoins.size(), 20); i++) {
+            for (int i = 0; i < Math.min(newCoins.size(), 8); i++) {
                 NewCoinResponse coin = newCoins.get(i);
                 response.append(String.format("%d. %s\n", i + 1, coin.getName()));
                 response.append(String.format("   Symbol: %s\n", coin.getSymbol()));
