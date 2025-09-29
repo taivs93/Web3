@@ -31,4 +31,7 @@ public class UserDto {
 
     @JsonProperty("wallet_address")
     private String walletAddress;
+
+    @JsonProperty("telegram_user_id")
+    private Long telegramUserId;
 }

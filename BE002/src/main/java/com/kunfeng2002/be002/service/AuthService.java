@@ -138,6 +138,7 @@ public class AuthService {
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreatedAt())
                 .walletAddress(user.getWallet().getAddress())
+                .telegramUserId(user.getTelegramUserId())
                 .build();
     }
 

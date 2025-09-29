@@ -177,8 +177,11 @@ export const useAuthStore = defineStore('auth', {
 
         const response = await authAPI.getProfile(this.walletAddress)
         
+        console.log('Profile API response:', response.data)
+        
         if (response.data && response.data.data) {
           this.user = response.data.data
+          console.log('Updated user data:', this.user)
           
           // Lưu vào localStorage
           this.saveToLocalStorage()

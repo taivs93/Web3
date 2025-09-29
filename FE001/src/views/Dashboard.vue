@@ -2,58 +2,34 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2">
-          <div class="bg-white rounded-lg shadow-lg mb-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h2 class="text-lg font-semibold text-gray-900">Thông tin tài khoản</h2>
-            </div>
-            <div class="p-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ ví</label>
-                    <p class="text-sm text-gray-900 font-mono">{{ authStore.walletAddress || 'Chưa kết nối' }}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái Telegram</label>
-                    <span v-if="!isTelegramLinked" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      Chưa liên kết
-                    </span>
-                    <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Đã liên kết
-                    </span>
-                  </div>
-                </div>
-                <div class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Linking Code</label>
-                    <button
-                      @click="getLinkingCode"
-                      class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
-                    >
-                      Lấy Linking Code
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- Dashboard content sẽ được thêm ở đây nếu cần -->
         </div>
 
         <div class="lg:col-span-1">
-          <div class="bg-white rounded-lg shadow-lg sticky top-4">
-            <div class="px-6 py-4 border-b border-gray-200">
+          <div class="space-y-6 sticky top-4 z-10">
+            <div class="bg-white rounded-lg shadow-lg">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h2 class="text-lg font-semibold text-gray-900">Chat Bot</h2>
+              <button
+                @click="toggleChatBot"
+                class="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                :title="isChatBotOpen ? 'Đóng' : 'Mở'"
+              >
+                <svg class="w-5 h-5 transition-transform" :class="{ 'rotate-180': !isChatBotOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
             </div>
-            <div class="p-6">
+            <div v-show="isChatBotOpen" class="p-6">
               <div class="space-y-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Quick Commands</label>
-                  <div class="space-y-2">
+                  <div class="grid grid-cols-2 gap-1">
                     <button
                       v-for="command in quickCommands"
                       :key="command"
                       @click="sendQuickCommand(command)"
-                      class="w-full text-left px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                      class="text-left px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
                     >
                       {{ command }}
                     </button>
@@ -106,14 +82,23 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Quản lý ví -->
-          <div class="bg-white rounded-lg shadow-lg mb-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h2 class="text-lg font-semibold text-gray-900">Quản lý ví theo dõi</h2>
             </div>
-            <div class="p-6">
+
+            <!-- Quản lý ví -->
+            <div class="bg-white rounded-lg shadow-lg wallet-management" style="margin-top: 10px;">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 class="text-lg font-semibold text-gray-900">Quản lý ví theo dõi</h2>
+              <button
+                @click="toggleWalletManagement"
+                class="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                :title="isWalletManagementOpen ? 'Đóng' : 'Mở'"
+              >
+                <svg class="w-5 h-5 transition-transform" :class="{ 'rotate-180': !isWalletManagementOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+            </div>
+            <div v-show="isWalletManagementOpen" class="p-6">
               <!-- Thêm ví mới -->
               <div class="mb-6">
                 <h3 class="text-md font-medium text-gray-900 mb-4">Thêm ví để theo dõi</h3>
@@ -189,6 +174,7 @@
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
       </div>
@@ -208,8 +194,11 @@ const authStore = useAuthStore()
 const currentMessage = ref('')
 const messages = ref([])
 const isLoading = ref(false)
-const isTelegramLinked = ref(false)
 const messagesContainer = ref(null)
+
+// Collapse states
+const isChatBotOpen = ref(true)
+const isWalletManagementOpen = ref(true)
 const showChat = ref(false)
 const notifications = ref([])
 
@@ -228,6 +217,15 @@ const quickCommands = ref([
   '/list',
   '/clear'
 ])
+
+// Toggle methods
+const toggleChatBot = () => {
+  isChatBotOpen.value = !isChatBotOpen.value
+}
+
+const toggleWalletManagement = () => {
+  isWalletManagementOpen.value = !isWalletManagementOpen.value
+}
 
 const sendMessage = async () => {
   if (!currentMessage.value.trim() || isLoading.value) return
@@ -289,19 +287,16 @@ const processCommand = async (command) => {
       const botResponse = response.data.data
       
       if (botResponse.message && botResponse.message.includes('not linked to Telegram')) {
-        addMessage('bot', 'Bạn cần liên kết tài khoản Telegram trước!\n\nHãy click nút "Lấy Linking Code" để lấy linking code.')
-        isTelegramLinked.value = false
+        addMessage('bot', 'Bạn cần liên kết tài khoản Telegram trước!\n\nHãy vào trang Profile để lấy linking code.')
       } else {
         addMessage('bot', botResponse.message || 'Lệnh đã được xử lý thành công!')
-        isTelegramLinked.value = true
       }
     } else {
       addMessage('bot', 'Không thể xử lý lệnh. Vui lòng thử lại!')
     }
   } catch (error) {
     if (error.response?.data?.message?.includes('not linked to Telegram')) {
-      addMessage('bot', 'Bạn cần liên kết tài khoản Telegram trước!\n\nHãy click nút "Lấy Linking Code" để lấy linking code.')
-      isTelegramLinked.value = false
+      addMessage('bot', 'Bạn cần liên kết tài khoản Telegram trước!\n\nHãy vào trang Profile để lấy linking code.')
     } else {
       addMessage('bot', 'Có lỗi xảy ra khi xử lý lệnh. Vui lòng thử lại!')
     }
@@ -310,21 +305,6 @@ const processCommand = async (command) => {
   }
 }
 
-const getLinkingCode = async () => {
-  try {
-    const response = await chatAPI.getLinkAccount(authStore.walletAddress)
-    const linkingCode = response.data.data
-    
-    addMessage('bot', `Linking Code: ${linkingCode}\n\nGửi lệnh này trong Telegram bot:\n/link ${linkingCode}\n\nSau khi link thành công, bạn có thể sử dụng các lệnh khác ở đây.`)
-    
-    const botUsername = 'taiteasicale_bot'
-    const telegramUrl = `https://t.me/${botUsername}`
-    window.open(telegramUrl, '_blank')
-    
-  } catch (error) {
-    addMessage('bot', 'Không thể lấy linking code. Vui lòng thử lại!')
-  }
-}
 
 const scrollToBottom = () => {
   if (messagesContainer.value) {
