@@ -1,179 +1,193 @@
-# Web3 Frontend - Gas Fee Integration
+# Web3 Chat Bot Frontend
 
-## Tổng quan
+Frontend cho ứng dụng Web3 Chat Bot, được xây dựng với Vue 3 và Tailwind CSS.
 
-Frontend đã được hoàn thiện với tính năng hiển thị phí gas real-time cho người dùng web. Ứng dụng bao gồm:
+## 🚀 Tính năng chính
 
-- **Gas Fee Widget**: Hiển thị phí gas cho các network khác nhau (BSC, Ethereum, Arbitrum, Optimism, Avalanche)
-- **Search Page**: Tìm kiếm blockchain data (blocks, transactions, addresses, tokens)
-- **Real-time Updates**: Tự động cập nhật phí gas mỗi 30 giây
+### 🔐 Xác thực Web3
+- Đăng nhập bằng MetaMask
+- Xác thực bằng chữ ký số
+- Quản lý profile người dùng
 
-## Tính năng mới
+### 💼 Portfolio Management
+- Tạo và quản lý portfolio
+- Thêm/xóa token
+- Theo dõi giá real-time
+- Tính toán P&L
 
-### 1. Gas Fee Widget (`/src/components/GasFeeWidget.vue`)
+### 🔍 Tìm kiếm Coin & Token
+- Tìm kiếm theo tên, symbol
+- Tìm kiếm theo địa chỉ contract
+- Tìm kiếm online
+- Hiển thị thông tin chi tiết
 
-- Hiển thị 3 mức phí gas: Chậm, Khuyến nghị, Nhanh
-- Chuyển đổi giữa các network
-- Tự động refresh mỗi 30 giây
-- Format hiển thị: Gwei và BNB/ETH
-- Loading states và error handling
+### 👛 Quản lý Ví
+- Theo dõi địa chỉ ví
+- Danh sách ví toàn cầu
+- Thông báo hoạt động ví
 
-### 2. Search Page (`/src/views/Search.vue`)
-
-- Tìm kiếm blocks, transactions, addresses, tokens
+### ⚡ Gas Fee Widget
+- Hiển thị phí gas real-time
 - Hỗ trợ nhiều network
-- Hiển thị kết quả tìm kiếm với UI đẹp
-- Tích hợp Gas Fee Widget
+- Tự động cập nhật
 
-### 3. API Integration (`/src/services/api.js`)
+### 🔔 Thông báo Real-time
+- WebSocket integration
+- Thông báo hoạt động ví
+- Cảnh báo giá
+- Cập nhật portfolio
 
-- **Gas API**: Lấy ước tính phí gas
-- **Search API**: Tìm kiếm blockchain data
-- Error handling và response interceptors
+## 🛠️ Công nghệ sử dụng
 
-## Cấu trúc API
+- **Vue 3** - Framework JavaScript
+- **Vue Router** - Routing
+- **Pinia** - State management
+- **Tailwind CSS** - Styling
+- **Axios** - HTTP client
+- **Ethers.js** - Web3 integration
+- **WebSocket** - Real-time communication
 
-### Gas API Endpoints
-
-```
-GET /api/gas/estimate/{network}     - Lấy phí gas nhanh
-POST /api/gas/estimate/{network}    - Lấy phí gas với custom parameters
-```
-
-### Search API Endpoints
-
-```
-POST /api/search/general           - Tìm kiếm tổng quát
-GET /api/search/block              - Tìm kiếm block
-GET /api/search/transaction        - Tìm kiếm transaction
-GET /api/search/address            - Tìm kiếm address
-GET /api/search/token              - Tìm kiếm token
-GET /api/search/stats/{network}    - Thống kê network
-GET /api/search/tokens/top         - Top tokens
-GET /api/search/transactions/recent - Recent transactions
-```
-
-## Cách sử dụng
-
-### 1. Chạy Frontend
+## 📦 Cài đặt
 
 ```bash
-cd FE001
+# Cài đặt dependencies
 npm install
+
+# Chạy development server
+npm run dev
+
+# Build cho production
+npm run build
+
+# Preview build
+npm run preview
+```
+
+## 🔧 Cấu hình
+
+### Backend API
+Cập nhật `API_BASE_URL` trong `src/services/api.js`:
+
+```javascript
+const API_BASE_URL = 'http://localhost:8080/api'
+```
+
+### WebSocket
+Cập nhật WebSocket URL trong `src/services/simple-websocket.js`:
+
+```javascript
+this.ws = new WebSocket('ws://localhost:8080/api/ws')
+```
+
+## 📱 Các trang chính
+
+### 🏠 Dashboard (`/dashboard`)
+- Trang chủ với chat bot
+- Thông tin tài khoản
+- Quick commands
+- Thông báo real-time
+
+### 💼 Portfolio (`/portfolio`)
+- Quản lý portfolio
+- Thêm/xóa token
+- Theo dõi hiệu suất
+
+### 🔍 Search (`/search`)
+- Tìm kiếm coin/token
+- Nhiều loại tìm kiếm
+- Hiển thị thông tin chi tiết
+
+### 👛 Wallet (`/wallet`)
+- Quản lý ví theo dõi
+- Danh sách ví toàn cầu
+- Thêm/bỏ theo dõi
+
+### 👤 Profile (`/profile`)
+- Thông tin cá nhân
+- Liên kết Telegram
+- Cập nhật profile
+
+## 🔌 API Integration
+
+### Auth API
+- `POST /login` - Đăng nhập
+- `GET /profile` - Lấy profile
+- `PUT /profile` - Cập nhật profile
+- `GET /nonce` - Lấy nonce
+
+### Portfolio API
+- `POST /portfolio` - Tạo portfolio
+- `GET /portfolio` - Lấy danh sách
+- `POST /portfolio/tokens` - Thêm token
+- `DELETE /portfolio/{id}` - Xóa portfolio
+
+### Coin API
+- `GET /coins` - Lấy tất cả coins
+- `GET /coins/search` - Tìm kiếm
+- `GET /coins/{address}` - Lấy theo địa chỉ
+
+### Wallet API
+- `GET /wallet/followed-addresses` - Ví đang theo dõi
+- `POST /wallet/follow` - Theo dõi ví
+- `POST /wallet/unfollow` - Bỏ theo dõi
+
+### Gas API
+- `GET /gas/estimate/{network}` - Ước tính gas fee
+
+## 🌐 WebSocket Events
+
+### Các loại thông báo:
+- `notification` - Thông báo hệ thống
+- `wallet-activity` - Hoạt động ví
+- `price-alert` - Cảnh báo giá
+- `portfolio-update` - Cập nhật portfolio
+- `gas-update` - Cập nhật gas fee
+
+## 🎨 UI Components
+
+### Components chính:
+- `GasFeeWidget` - Widget hiển thị gas fee
+- `NotificationBell` - Thông báo
+- `ChatWidget` - Chat bot interface
+
+## 🔒 Bảo mật
+
+- Xác thực bằng MetaMask
+- Chữ ký số cho đăng nhập
+- CORS configuration
+- Input validation
+
+## 📱 Responsive Design
+
+- Mobile-first approach
+- Tailwind CSS responsive utilities
+- Optimized cho mobile và desktop
+
+## 🚀 Deployment
+
+### Development
+```bash
 npm run dev
 ```
 
-### 2. Chạy Backend
-
+### Production
 ```bash
-cd BE002
-./mvnw spring-boot:run
+npm run build
+# Deploy thư mục dist/
 ```
 
-### 3. Truy cập ứng dụng
+## 🤝 Contributing
 
-- **Trang chủ**: http://localhost:5173/
-- **Tìm kiếm**: http://localhost:5173/search
-- **API Backend**: http://localhost:8080/api
+1. Fork repository
+2. Tạo feature branch
+3. Commit changes
+4. Push to branch
+5. Tạo Pull Request
 
-## Cấu hình
+## 📄 License
 
-### Networks được hỗ trợ
+MIT License
 
-- **BSC** (Binance Smart Chain) - Mặc định
-- **Ethereum**
-- **Arbitrum**
-- **Optimism**
-- **Avalanche**
+## 🆘 Support
 
-### Gas Fee Display
-
-- **Chậm**: ~5 phút, multiplier 1.0x
-- **Khuyến nghị**: ~2 phút, multiplier 1.2x
-- **Nhanh**: ~30 giây, multiplier 1.5x
-
-## Tính năng kỹ thuật
-
-### Real-time Updates
-
-- Gas fee tự động refresh mỗi 30 giây
-- WebSocket support cho real-time notifications
-- Caching để tối ưu performance
-
-### Responsive Design
-
-- Mobile-first approach
-- TailwindCSS cho styling
-- Dark/light mode support
-
-### Error Handling
-
-- Network error handling
-- Loading states
-- User-friendly error messages
-- Retry mechanisms
-
-## Dependencies
-
-### Frontend
-
-- Vue 3 + Composition API
-- Vue Router 4
-- Pinia (State Management)
-- Axios (HTTP Client)
-- TailwindCSS (Styling)
-- Web3.js + Ethers.js (Blockchain)
-
-### Backend
-
-- Spring Boot 3
-- MySQL Database
-- Redis Cache
-- Web3j Integration
-- Kafka (Message Queue)
-
-## Development Notes
-
-### Gas Fee Calculation
-
-```javascript
-// Convert Wei to Gwei
-const gwei = parseFloat(price) / 1e9
-
-// Convert Wei to BNB/ETH
-const bnb = parseFloat(totalFee) / 1e18
-```
-
-### Network Configuration
-
-```yaml
-# application.yml
-network:
-  bsc:
-    rpc-url: wss://bsc-mainnet.infura.io/ws/v3/...
-    chain-id: 56
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Gas API không hoạt động**: Kiểm tra backend có chạy không
-2. **CORS errors**: Đảm bảo backend có CORS configuration
-3. **Network không hỗ trợ**: Kiểm tra network configuration trong backend
-
-### Debug Mode
-
-```javascript
-// Enable debug logging
-localStorage.setItem('debug', 'true')
-```
-
-## Future Enhancements
-
-- [ ] Historical gas price charts
-- [ ] Gas price predictions
-- [ ] Multi-wallet support
-- [ ] Transaction simulation
-- [ ] Advanced search filters
-- [ ] Export search results
+Nếu gặp vấn đề, vui lòng tạo issue trên GitHub repository.

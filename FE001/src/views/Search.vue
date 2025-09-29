@@ -1,51 +1,10 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <router-link to="/" class="text-xl font-bold text-gray-900">Web3 Explorer</router-link>
-          </div>
-          <div class="flex items-center space-x-4">
-            <router-link
-              to="/"
-              class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              Trang chủ
-            </router-link>
-            <template v-if="authStore.isAuthenticated">
-              <router-link
-                to="/profile"
-                class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Hồ sơ
-              </router-link>
-              <button
-                @click="logout"
-                class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
-              >
-                Đăng xuất
-              </button>
-            </template>
-            <template v-else>
-              <router-link
-                to="/login"
-                class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Đăng nhập
-              </router-link>
-            </template>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Search Header -->
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">Tìm kiếm Blockchain</h1>
-        <p class="text-lg text-gray-600">Tìm kiếm blocks, transactions, addresses và tokens</p>
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Tìm kiếm Coin & Token</h1>
+        <p class="text-lg text-gray-600">Tìm kiếm coin, token theo tên, symbol hoặc địa chỉ contract</p>
       </div>
 
       <!-- Search Form -->
@@ -56,20 +15,19 @@
               v-model="searchQuery"
               @keyup.enter="performSearch"
               type="text"
-              placeholder="Nhập block hash, transaction hash, address hoặc token..."
+              placeholder="Nhập tên coin, symbol (BTC, ETH) hoặc địa chỉ contract..."
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div class="flex gap-2">
             <select
-              v-model="selectedNetwork"
+              v-model="searchType"
               class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="bsc">BSC</option>
-              <option value="ethereum">Ethereum</option>
-              <option value="arbitrum">Arbitrum</option>
-              <option value="optimism">Optimism</option>
-              <option value="avalanche">Avalanche</option>
+              <option value="search">Tìm kiếm tổng quát</option>
+              <option value="symbol">Tìm theo Symbol</option>
+              <option value="address">Tìm theo địa chỉ</option>
+              <option value="online">Tìm kiếm online</option>
             </select>
             <button
               @click="performSearch"
@@ -85,102 +43,77 @@
         </div>
       </div>
 
-      <!-- Gas Fee Widget -->
-      <GasFeeWidget />
-
       <!-- Search Results -->
       <div v-if="searchResults" class="space-y-6">
-        <!-- Blocks -->
-        <div v-if="searchResults.blocks && searchResults.blocks.length > 0" class="bg-white rounded-lg shadow-lg p-6">
-          <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-            </svg>
-            Blocks ({{ searchResults.totalBlocks }})
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="block in searchResults.blocks"
-              :key="block.id"
-              class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="font-medium text-gray-900">Block #{{ block.blockNumber }}</div>
-                  <div class="text-sm text-gray-600 font-mono">{{ block.blockHash }}</div>
-                </div>
-                <div class="text-right text-sm text-gray-600">
-                  <div>{{ formatTimestamp(block.timestamp) }}</div>
-                  <div>{{ block.transactionCount }} txs</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Transactions -->
-        <div v-if="searchResults.transactions && searchResults.transactions.length > 0" class="bg-white rounded-lg shadow-lg p-6">
-          <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-            </svg>
-            Transactions ({{ searchResults.totalTransactions }})
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="tx in searchResults.transactions"
-              :key="tx.id"
-              class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              <div class="flex items-center justify-between">
-                <div class="flex-1">
-                  <div class="font-mono text-sm text-gray-900 break-all">{{ tx.transactionHash }}</div>
-                  <div class="text-sm text-gray-600 mt-1">
-                    From: {{ tx.fromAddress }} → To: {{ tx.toAddress }}
-                  </div>
-                </div>
-                <div class="text-right text-sm text-gray-600 ml-4">
-                  <div>{{ formatTimestamp(tx.timestamp) }}</div>
-                  <div>{{ formatValue(tx.value) }} BNB</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tokens -->
-        <div v-if="searchResults.tokens && searchResults.tokens.length > 0" class="bg-white rounded-lg shadow-lg p-6">
+        <!-- Coins -->
+        <div v-if="searchResults.length > 0" class="bg-white rounded-lg shadow-lg p-6">
           <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
             <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
             </svg>
-            Tokens ({{ searchResults.totalTokens }})
+            Kết quả tìm kiếm ({{ searchResults.length }})
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div
-              v-for="token in searchResults.tokens"
-              :key="token.id"
-              class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+              v-for="coin in searchResults"
+              :key="coin.id"
+              class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              @click="selectCoin(coin)"
             >
-              <div class="flex items-center mb-2">
-                <div class="w-8 h-8 bg-gray-200 rounded-full mr-3"></div>
-                <div>
-                  <div class="font-medium text-gray-900">{{ token.name }}</div>
-                  <div class="text-sm text-gray-600">{{ token.symbol }}</div>
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mr-3 flex items-center justify-center text-white font-bold">
+                    {{ coin.symbol?.charAt(0) || '?' }}
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-900">{{ coin.name || 'Unknown' }}</div>
+                    <div class="text-sm text-gray-600 font-mono">{{ coin.symbol || 'N/A' }}</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div v-if="coin.currentPrice" class="text-sm font-medium text-gray-900">
+                    ${{ formatPrice(coin.currentPrice) }}
+                  </div>
+                  <div v-if="coin.priceChangePercentage24h" 
+                       :class="coin.priceChangePercentage24h >= 0 ? 'text-green-600' : 'text-red-600'"
+                       class="text-xs">
+                    {{ coin.priceChangePercentage24h >= 0 ? '+' : '' }}{{ formatPrice(coin.priceChangePercentage24h) }}%
+                  </div>
                 </div>
               </div>
-              <div class="text-sm text-gray-600 font-mono break-all">{{ token.tokenAddress }}</div>
+              
+              <div class="space-y-2 text-sm">
+                <div v-if="coin.address" class="flex items-center">
+                  <span class="text-gray-600 w-16">Address:</span>
+                  <span class="font-mono text-gray-900 break-all">{{ coin.address }}</span>
+                  <button @click.stop="copyAddress(coin.address)" class="ml-2 text-gray-400 hover:text-gray-600">
+                    📋
+                  </button>
+                </div>
+                <div v-if="coin.marketCap" class="flex items-center">
+                  <span class="text-gray-600 w-16">Market Cap:</span>
+                  <span class="text-gray-900">${{ formatNumber(coin.marketCap) }}</span>
+                </div>
+                <div v-if="coin.volume24h" class="flex items-center">
+                  <span class="text-gray-600 w-16">Volume 24h:</span>
+                  <span class="text-gray-900">${{ formatNumber(coin.volume24h) }}</span>
+                </div>
+                <div v-if="coin.totalSupply" class="flex items-center">
+                  <span class="text-gray-600 w-16">Supply:</span>
+                  <span class="text-gray-900">{{ formatNumber(coin.totalSupply) }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- No Results -->
-        <div v-if="!searchResults.found" class="text-center py-12">
+        <div v-else class="text-center py-12">
           <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">Không tìm thấy kết quả</h3>
-          <p class="text-gray-600">Thử tìm kiếm với từ khóa khác hoặc kiểm tra lại network</p>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Không tìm thấy coin nào</h3>
+          <p class="text-gray-600">Thử tìm kiếm với từ khóa khác hoặc thay đổi loại tìm kiếm</p>
         </div>
       </div>
 
@@ -189,22 +122,21 @@
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
         <p class="mt-4 text-gray-600">Đang tìm kiếm...</p>
       </div>
+      </div>
     </div>
-  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { searchAPI } from '@/services/api'
-import GasFeeWidget from '@/components/GasFeeWidget.vue'
+import { coinAPI } from '@/services/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const searchQuery = ref('')
-const selectedNetwork = ref('bsc')
+const searchType = ref('search')
 const loading = ref(false)
 const searchResults = ref(null)
 
@@ -215,30 +147,60 @@ const performSearch = async () => {
   searchResults.value = null
   
   try {
-    const response = await searchAPI.generalSearch(
-      searchQuery.value.trim(),
-      selectedNetwork.value,
-      0,
-      20
-    )
-    searchResults.value = response.data
+    let response
+    
+    switch (searchType.value) {
+      case 'symbol':
+        response = await coinAPI.getCoinsBySymbol(searchQuery.value.trim().toUpperCase())
+        break
+      case 'address':
+        response = await coinAPI.getCoinByAddress(searchQuery.value.trim())
+        searchResults.value = response.data ? [response.data] : []
+        loading.value = false
+        return
+      case 'online':
+        response = await coinAPI.searchCoinsOnline(searchQuery.value.trim())
+        break
+      default:
+        response = await coinAPI.searchCoins(searchQuery.value.trim())
+    }
+    
+    searchResults.value = response.data || []
   } catch (error) {
     console.error('Search error:', error)
-    // Handle error
+    alert('Lỗi tìm kiếm: ' + (error.response?.data?.message || error.message))
+    searchResults.value = []
   } finally {
     loading.value = false
   }
 }
 
-const formatTimestamp = (timestamp) => {
-  if (!timestamp) return 'N/A'
-  return new Date(timestamp).toLocaleString('vi-VN')
+const selectCoin = (coin) => {
+  // Có thể mở modal chi tiết coin hoặc chuyển đến trang chi tiết
+  console.log('Selected coin:', coin)
+  alert(`Đã chọn coin: ${coin.name} (${coin.symbol})`)
 }
 
-const formatValue = (value) => {
+const copyAddress = async (address) => {
+  try {
+    await navigator.clipboard.writeText(address)
+    alert('Đã sao chép địa chỉ!')
+  } catch (error) {
+    console.error('Copy error:', error)
+  }
+}
+
+const formatPrice = (price) => {
+  if (!price) return '0.00'
+  return parseFloat(price).toFixed(6)
+}
+
+const formatNumber = (value) => {
   if (!value) return '0'
-  const bnb = parseFloat(value) / 1e18
-  return bnb.toFixed(6)
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(value)
 }
 
 const logout = () => {

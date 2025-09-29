@@ -19,10 +19,11 @@ public class WalletController {
     public ResponseEntity<ResponseDTO> getFollowedAddresses(@RequestParam Long chatId) {
         List<String> addresses = followService.getFollowedAddressesByChatId(chatId);
         
-        ResponseDTO responseDTO = new ResponseDTO();
-        responseDTO.setStatus(200);
-        responseDTO.setMessage("Get followed addresses successfully");
-        responseDTO.setData(addresses);
+        ResponseDTO responseDTO = ResponseDTO.builder()
+                .status(200)
+                .message("Get followed addresses successfully")
+                .data(addresses)
+                .build();
 
         return ResponseEntity.ok(responseDTO);
     }
@@ -31,10 +32,11 @@ public class WalletController {
     public ResponseEntity<ResponseDTO> getGlobalFollowedAddresses() {
         List<String> addresses = followService.getGloballyFollowedAddresses();
         
-        ResponseDTO responseDTO = new ResponseDTO();
-        responseDTO.setStatus(200);
-        responseDTO.setMessage("Get global followed addresses successfully");
-        responseDTO.setData(addresses);
+        ResponseDTO responseDTO = ResponseDTO.builder()
+                .status(200)
+                .message("Get global followed addresses successfully")
+                .data(addresses)
+                .build();
 
         return ResponseEntity.ok(responseDTO);
     }
@@ -44,16 +46,19 @@ public class WalletController {
         try {
             followService.follow(chatId, address);
             
-            ResponseDTO responseDTO = new ResponseDTO();
-            responseDTO.setStatus(200);
-            responseDTO.setMessage("Wallet followed successfully");
-            responseDTO.setData("Following: " + address);
+            ResponseDTO responseDTO = ResponseDTO.builder()
+                    .status(200)
+                    .message("Wallet followed successfully")
+                    .data("Following: " + address)
+                    .build();
             
             return ResponseEntity.ok(responseDTO);
         } catch (Exception e) {
-            ResponseDTO responseDTO = new ResponseDTO();
-            responseDTO.setStatus(400);
-            responseDTO.setMessage("Failed to follow wallet: " + e.getMessage());
+            ResponseDTO responseDTO = ResponseDTO.builder()
+                    .status(400)
+                    .message("Failed to follow wallet: " + e.getMessage())
+                    .data(null)
+                    .build();
             
             return ResponseEntity.badRequest().body(responseDTO);
         }
@@ -64,16 +69,19 @@ public class WalletController {
         try {
             followService.unfollow(chatId, address);
             
-            ResponseDTO responseDTO = new ResponseDTO();
-            responseDTO.setStatus(200);
-            responseDTO.setMessage("Wallet unfollowed successfully");
-            responseDTO.setData("Unfollowed: " + address);
+            ResponseDTO responseDTO = ResponseDTO.builder()
+                    .status(200)
+                    .message("Wallet unfollowed successfully")
+                    .data("Unfollowed: " + address)
+                    .build();
             
             return ResponseEntity.ok(responseDTO);
         } catch (Exception e) {
-            ResponseDTO responseDTO = new ResponseDTO();
-            responseDTO.setStatus(400);
-            responseDTO.setMessage("Failed to unfollow wallet: " + e.getMessage());
+            ResponseDTO responseDTO = ResponseDTO.builder()
+                    .status(400)
+                    .message("Failed to unfollow wallet: " + e.getMessage())
+                    .data(null)
+                    .build();
             
             return ResponseEntity.badRequest().body(responseDTO);
         }
@@ -81,10 +89,11 @@ public class WalletController {
 
     @GetMapping("/health")
     public ResponseEntity<ResponseDTO> walletHealth() {
-        ResponseDTO responseDTO = new ResponseDTO();
-        responseDTO.setStatus(200);
-        responseDTO.setMessage("Wallet service is running!");
-        responseDTO.setData("Wallet Management Active");
+        ResponseDTO responseDTO = ResponseDTO.builder()
+                .status(200)
+                .message("Wallet service is running!")
+                .data("Wallet Management Active")
+                .build();
 
         return ResponseEntity.ok(responseDTO);
     }

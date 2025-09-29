@@ -7,14 +7,36 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../views/Home.vue'),
-      meta: { requiresAuth: false }
+      component: () => import('../views/Home.vue')
     },
     {
       path: '/login',
-      name: 'login',
-      component: () => import('../views/Login.vue'),
+      name: 'login', 
+      component: () => import('../views/Login.vue')
+    },
+    {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: () => import('../views/Dashboard.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/portfolio',
+      name: 'portfolio',
+      component: () => import('../views/Portfolio.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/search',
+      name: 'search',
+      component: () => import('../views/Search.vue'),
       meta: { requiresAuth: false }
+    },
+    {
+      path: '/wallet',
+      name: 'wallet',
+      component: () => import('../views/Wallet.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/profile',
@@ -23,22 +45,21 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/search',
-      name: 'search',
-      component: () => import('../views/Search.vue'),
-      meta: { requiresAuth: false }
+      path: '/test',
+      name: 'test',
+      component: () => import('../views/Test.vue')
     }
   ]
 })
 
-// Navigation guard
+
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')
   } else if (to.name === 'login' && authStore.isAuthenticated) {
-    next('/profile')
+    next('/dashboard')
   } else {
     next()
   }

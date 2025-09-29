@@ -75,7 +75,7 @@
           <input
             v-model="currentMessage"
             @keyup.enter="sendMessage"
-            placeholder="Nhập lệnh (ví dụ: /help, /search BTC, /gas bsc)..."
+            placeholder="Nhập lệnh (ví dụ: /help, /follow 0x123...)..."
             class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             :disabled="isLoading"
           />
@@ -117,8 +117,8 @@
 
 <script setup>
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { chatAPI } from '@/services/api'
+import { useAuthStore } from '../stores/auth'
+import { chatAPI } from '../services/api'
 
 const authStore = useAuthStore()
 
@@ -136,8 +136,6 @@ const quickCommands = ref([
   '/follow',
   '/unfollow',
   '/list',
-  '/search',
-  '/gas',
   '/link'
 ])
 
@@ -215,62 +213,23 @@ const processCommand = async (command) => {
     const cmd = parts[0]
     const argument = parts.slice(1).join(' ')
     
-    let response
+    const response = await chatAPI.sendMessage(
+      cmd,
+      authStore.walletAddress,
+      argument
+    )
     
-    // Xử lý các command đặc biệt
-    switch (cmd) {
-      case '/list':
-        response = await chatAPI.getFollowedAddresses(authStore.walletAddress)
-        if (response.data && response.data.data) {
-          const addresses = response.data.data
-          if (addresses.length === 0) {
-            addMessage('bot', 'Bạn chưa theo dõi địa chỉ ví nào.\n\nSử dụng /follow <địa_chỉ_ví> để bắt đầu theo dõi.')
-          } else {
-            addMessage('bot', 'Danh sách địa chỉ đang theo dõi:\n\n' + addresses.join('\n'))
-          }
-        }
-        break
-        
-      case '/search':
-        if (!argument.trim()) {
-          addMessage('bot', 'Vui lòng nhập từ khóa tìm kiếm. Ví dụ: /search BTC hoặc /search Bitcoin')
-          break
-        }
-        response = await chatAPI.searchCoins(argument, authStore.walletAddress)
-        if (response.data && response.data.data) {
-          addMessage('bot', response.data.data)
-        }
-        break
-        
-      case '/gas':
-        response = await chatAPI.getGasEstimate(argument || 'bsc', authStore.walletAddress)
-        if (response.data && response.data.data) {
-          addMessage('bot', response.data.data)
-        }
-        break
-        
-      default:
-        // Các command khác gửi qua sendMessage
-        response = await chatAPI.sendMessage(
-          cmd,
-          authStore.walletAddress,
-          argument,
-          'bsc'
-        )
-        
-        if (response.data && response.data.data) {
-          const botResponse = response.data.data
-          
-          // Check if user needs to link Telegram first
-          if (botResponse.message && botResponse.message.includes('not linked to Telegram')) {
-            addMessage('bot', 'Bạn cần liên kết tài khoản Telegram trước!\n\nHãy click nút "Liên kết Telegram" trong trang Profile để lấy linking code.')
-          } else {
-            addMessage('bot', botResponse.message || 'Lệnh đã được xử lý thành công!')
-          }
-        } else {
-          addMessage('bot', 'Không thể xử lý lệnh. Vui lòng thử lại!')
-        }
-        break
+    if (response.data && response.data.data) {
+      const botResponse = response.data.data
+      
+      // Check if user needs to link Telegram first
+      if (botResponse.message && botResponse.message.includes('not linked to Telegram')) {
+        addMessage('bot', 'Bạn cần liên kết tài khoản Telegram trước!\n\nHãy click nút "Liên kết Telegram" trong trang Profile để lấy linking code.')
+      } else {
+        addMessage('bot', botResponse.message || 'Lệnh đã được xử lý thành công!')
+      }
+    } else {
+      addMessage('bot', 'Không thể xử lý lệnh. Vui lòng thử lại!')
     }
   } catch (error) {
     console.error('Chat error:', error)
@@ -303,7 +262,7 @@ const formatTime = (timestamp) => {
 
 onMounted(() => {
   if (authStore.isAuthenticated) {
-    addMessage('bot', `Xin chào! Tôi là Web3 Chat Bot.\n\nCác lệnh có sẵn:\n/start - Lời chào mừng\n/help - Xem danh sách lệnh\n/follow <địa_chỉ_ví> - Theo dõi ví\n/unfollow <địa_chỉ_ví> - Bỏ theo dõi ví\n/list - Xem danh sách ví đang theo dõi\n/search <từ_khóa> - Tìm kiếm coin\n/gas [network] - Xem phí gas\n/link - Liên kết tài khoản Telegram\n\nLưu ý: Bạn cần liên kết Telegram trước khi sử dụng các lệnh khác!`)
+    addMessage('bot', `Xin chào! Tôi là Web3 Chat Bot.\n\nCác lệnh có sẵn:\n/start - Lời chào mừng\n/help - Xem danh sách lệnh\n/follow <địa_chỉ_ví> - Theo dõi ví\n/unfollow <địa_chỉ_ví> - Bỏ theo dõi ví\n/list - Xem danh sách ví đang theo dõi\n/link - Liên kết tài khoản Telegram\n\nLưu ý: Bạn cần liên kết Telegram trước khi sử dụng các lệnh khác!`)
   }
 })
 </script>
