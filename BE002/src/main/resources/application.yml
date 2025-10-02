@@ -114,3 +114,15 @@ binance:
   api-key: y1onvQDl4ZHwlkbT0NfbuFwP16QUoDiq1zpnMubOJ99YAZoZQ9swyqzTasKtURj3
   secret-key: 43bkwRAQLAZR0hSRcLiZhnkKqym8L7q6lWMJaONC9JmbyIcai09QMsL3waPpbtf1
   base-url: https://api.binance.com/api/v3
+
+etherscan:
+  api-key: IJQDT6DF1XHRQ4ASCMFXJUQ9XQUA2QTSF5
+  base-url: https://api.etherscan.io/api
+
+moralis:
+  api-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjQ5ZTFiM2RjLTcxYjEtNDhhNi1hOThhLWUzZjY2ODMxZDBjYyIsIm9yZ0lkIjoiNDczMzQ1IiwidXNlcklkIjoiNDg2OTM0IiwidHlwZUlkIjoiZTI4NTFlMWQtY2JiYS00ZTlkLThjYjItZjIwNzRmM2JkODJkIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NTkzMDEzMTEsImV4cCI6NDkxNTA2MTMxMX0._GdmPwVE06BhV28iCDIFJ_kQyFlidzjhKLi9IZhY_bs
+  base-url: https://deep-index.moralis.io/api/v2
+
+debank:
+  access-key: 85f91643d1717d421eaad5fb42134ff9138bee95
+  base-url: https://pro-openapi.debank.com

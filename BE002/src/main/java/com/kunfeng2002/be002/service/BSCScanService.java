@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -45,11 +46,27 @@ public class BSCScanService {
 
     private String findMatchingToken(Map<String, Object> response, String symbol, String name) {
         try {
-            // BSCScan trả về danh sách tokens
-            // Tìm token có symbol hoặc name phù hợp
-            // Logic này cần được implement dựa trên response structure của BSCScan
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> result = (List<Map<String, Object>>) response.get("result");
             
-            // Tạm thời return null để implement sau
+            if (result != null) {
+                for (Map<String, Object> token : result) {
+                    String tokenSymbol = (String) token.get("symbol");
+                    String tokenName = (String) token.get("name");
+                    String contractAddress = (String) token.get("contractAddress");
+                    
+                    if (tokenSymbol != null && tokenSymbol.equalsIgnoreCase(symbol)) {
+                        log.info("Found token by symbol: {} -> {}", symbol, contractAddress);
+                        return contractAddress;
+                    }
+                    
+                    if (tokenName != null && tokenName.toLowerCase().contains(name.toLowerCase())) {
+                        log.info("Found token by name: {} -> {}", name, contractAddress);
+                        return contractAddress;
+                    }
+                }
+            }
+            
             return null;
         } catch (Exception e) {
             log.error("Lỗi khi tìm token phù hợp: {}", e.getMessage());
@@ -59,14 +76,27 @@ public class BSCScanService {
 
     private String searchTokenBySymbol(String symbol) {
         try {
-            // Tìm kiếm token bằng symbol
-            String url = bscscanBaseUrl + "?module=token&action=tokenlist&address=0x0000000000000000000000000000000000000000&apikey=" + bscscanApiKey;
+            // Use CoinGecko as primary source for BSC tokens
+            String url = "https://api.coingecko.com/api/v3/coins/list?include_platform=true";
             
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> coins = restTemplate.getForObject(url, List.class);
             
-            if (response != null && "1".equals(response.get("status"))) {
-                // Tìm token có symbol phù hợp
-                return findTokenBySymbol(response, symbol);
+            if (coins != null) {
+                for (Map<String, Object> coin : coins) {
+                    String coinSymbol = (String) coin.get("symbol");
+                    if (coinSymbol != null && coinSymbol.equalsIgnoreCase(symbol)) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> platforms = (Map<String, Object>) coin.get("platforms");
+                        if (platforms != null) {
+                            String bscAddress = (String) platforms.get("binance-smart-chain");
+                            if (bscAddress != null && !bscAddress.isEmpty()) {
+                                log.info("Found BSC token address for {}: {}", symbol, bscAddress);
+                                return bscAddress;
+                            }
+                        }
+                    }
+                }
             }
             
             return null;
@@ -77,9 +107,24 @@ public class BSCScanService {
     }
 
     private String findTokenBySymbol(Map<String, Object> response, String symbol) {
-        // Implement logic tìm token theo symbol
-        // Cần xem response structure của BSCScan API
-        return null;
+        try {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> result = (List<Map<String, Object>>) response.get("result");
+            
+            if (result != null) {
+                for (Map<String, Object> token : result) {
+                    String tokenSymbol = (String) token.get("symbol");
+                    if (tokenSymbol != null && tokenSymbol.equalsIgnoreCase(symbol)) {
+                        return (String) token.get("contractAddress");
+                    }
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Lỗi khi tìm token theo symbol: {}", e.getMessage());
+            return null;
+        }
     }
 
     public String getTokenInfo(String contractAddress) {
@@ -231,6 +276,20 @@ public class BSCScanService {
 
     private String findTokenByName(Map<String, Object> response, String name) {
         try {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> result = (List<Map<String, Object>>) response.get("result");
+            
+            if (result != null) {
+                for (Map<String, Object> token : result) {
+                    String tokenName = (String) token.get("name");
+                    if (tokenName != null && tokenName.toLowerCase().contains(name.toLowerCase())) {
+                        String contractAddress = (String) token.get("contractAddress");
+                        log.info("Found token by name search: {} -> {}", name, contractAddress);
+                        return contractAddress;
+                    }
+                }
+            }
+            
             return null;
         } catch (Exception e) {
             log.error("Lỗi khi tìm token theo tên: {}", e.getMessage());
