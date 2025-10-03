@@ -1,6 +1,9 @@
 import axios from 'axios'
+import { getConfig } from '../../ngrok-config.js'
 
-const API_BASE_URL = '/api'
+// Tự động phát hiện môi trường tunnel
+const config = getConfig()
+const API_BASE_URL = config.API_BASE_URL
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -178,12 +181,9 @@ export const coinAPI = {
 
 // WebSocket API
 export const websocketAPI = {
-  // WebSocket endpoint
+  // WebSocket endpoint - tự động phát hiện tunnel
   getWebSocketUrl: () => {
-    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
-    const host = window.location.hostname
-    const port = '8080'
-    return `${protocol}//${host}:${port}/api/ws`
+    return config.WS_URL
   }
 }
 

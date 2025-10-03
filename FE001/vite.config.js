@@ -17,6 +17,13 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // Cho phép truy cập từ bên ngoài
+    allowedHosts: [
+      'localhost',
+      '.ngrok.io',
+      '.ngrok-free.app',
+      '8aa396bdad4a.ngrok-free.app' // Host ngrok cụ thể của bạn
+    ],
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
