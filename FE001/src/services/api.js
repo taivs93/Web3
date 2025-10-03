@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = '/api'
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -68,39 +68,27 @@ export const gasAPI = {
     apiClient.get(`/gas/estimate/${network}`)
 }
 
-// Search API
-export const searchAPI = {
-  // Tìm kiếm tổng quát
-  generalSearch: (query, network, page = 0, size = 20) =>
-    apiClient.post('/search/general', { query, network, page, size }),
+// Admin API
+export const adminAPI = {
+  // Trigger portfolio price update
+  triggerPortfolioPriceUpdate: () =>
+    apiClient.post('/admin/portfolio/update-prices'),
 
-  // Tìm kiếm block
-  searchBlock: (query, network) =>
-    apiClient.get('/search/block', { params: { query, network } }),
+  // Get enhanced gas price
+  getEnhancedGasPrice: (network) =>
+    apiClient.get(`/admin/gas/enhanced/${network}`),
 
-  // Tìm kiếm transaction
-  searchTransaction: (query, network) =>
-    apiClient.get('/search/transaction', { params: { query, network } }),
+  // Get enhanced token prices
+  getEnhancedTokenPrices: (symbols) =>
+    apiClient.get('/admin/price/enhanced', { params: { symbols: symbols.join(',') } }),
 
-  // Tìm kiếm address
-  searchAddress: (query, network, page = 0, size = 20) =>
-    apiClient.get('/search/address', { params: { query, network, page, size } }),
+  // Clear all caches
+  clearAllCaches: () =>
+    apiClient.post('/admin/cache/clear'),
 
-  // Tìm kiếm token
-  searchToken: (query, network, page = 0, size = 20) =>
-    apiClient.get('/search/token', { params: { query, network, page, size } }),
-
-  // Lấy thống kê network
-  getNetworkStats: (network) =>
-    apiClient.get(`/search/stats/${network}`),
-
-  // Lấy top tokens
-  getTopTokens: (network, limit = 10) =>
-    apiClient.get('/search/tokens/top', { params: { network, limit } }),
-
-  // Lấy recent transactions
-  getRecentTransactions: (network, limit = 10) =>
-    apiClient.get('/search/transactions/recent', { params: { network, limit } })
+  // Check services health
+  checkServicesHealth: () =>
+    apiClient.get('/admin/health/services')
 }
 
 // Wallet API

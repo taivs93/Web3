@@ -350,7 +350,7 @@ const addToken = async () => {
       portfolioId: selectedPortfolio.value.id,
       tokenSymbol: newToken.value.symbol.toUpperCase(),
       amount: parseFloat(newToken.value.amount),
-      buyPrice: parseFloat(newToken.value.buyPrice)
+      averageBuyPrice: parseFloat(newToken.value.buyPrice)
     }
     
     await portfolioAPI.addTokenToPortfolio(authStore.user.id, tokenData)

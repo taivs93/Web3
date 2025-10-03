@@ -55,6 +55,39 @@
           </div>
         </div>
 
+        <!-- Quick Access -->
+        <div class="mt-16">
+          <h2 class="text-3xl font-bold text-gray-900 text-center mb-8">Truy cập nhanh</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <router-link
+              to="/search"
+              class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center group"
+            >
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:bg-blue-200 transition-colors">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">Tìm kiếm Coin</h3>
+              <p class="text-gray-600">Tìm kiếm coin, token theo tên, symbol hoặc địa chỉ contract</p>
+            </router-link>
+
+
+            <router-link
+              to="/login"
+              class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center group"
+            >
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:bg-green-200 transition-colors">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                </svg>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">Đăng nhập</h3>
+              <p class="text-gray-600">Kết nối ví MetaMask để truy cập đầy đủ tính năng</p>
+            </router-link>
+          </div>
+        </div>
+
         <!-- How it works -->
         <div class="mt-16">
           <h2 class="text-3xl font-bold text-gray-900 text-center mb-8">Cách thức hoạt động</h2>
@@ -140,10 +173,18 @@
 
                 <div class="p-4 bg-teal-50 rounded-lg">
                   <div class="flex items-center mb-2">
-                    <span class="bg-teal-500 text-white px-2 py-1 rounded text-xs font-mono">POST</span>
-                    <span class="ml-2 font-mono text-sm">/api/search/general</span>
+                    <span class="bg-teal-500 text-white px-2 py-1 rounded text-xs font-mono">GET</span>
+                    <span class="ml-2 font-mono text-sm">/api/coins/search</span>
                   </div>
-                  <p class="text-sm text-gray-600">Tìm kiếm blockchain data</p>
+                  <p class="text-sm text-gray-600">Tìm kiếm coin và token</p>
+                </div>
+
+                <div class="p-4 bg-pink-50 rounded-lg">
+                  <div class="flex items-center mb-2">
+                    <span class="bg-pink-500 text-white px-2 py-1 rounded text-xs font-mono">POST</span>
+                    <span class="ml-2 font-mono text-sm">/api/portfolio</span>
+                  </div>
+                  <p class="text-sm text-gray-600">Quản lý portfolio</p>
                 </div>
               </div>
             </div>
