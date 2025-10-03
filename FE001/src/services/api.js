@@ -36,7 +36,7 @@ export const chatAPI = {
   linkAccount: (walletAddress) => 
     apiClient.post('/chat/link-account', { walletAddress }),
   
-  // Tạo linking code (GET)
+  // Tạo linking code (GET từ ChatController)
   getLinkAccount: (walletAddress) => 
     apiClient.get('/chat/link_account', { params: { walletAddress } }),
   

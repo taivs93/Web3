@@ -17,6 +17,14 @@
             >
               Bắt đầu ngay
             </router-link>
+            
+            <!-- Trick Button -->
+            <button
+              @click="showTrickPopup = true"
+              class="bg-purple-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-purple-700 transition-colors"
+            >
+              🎭 Thử Trick
+            </button>
           </div>
         </div>
       </div>
@@ -202,19 +210,42 @@
         </div>
       </div>
     </div>
+    
+    <!-- Trick Popup -->
+    <TrickPopup 
+      :show="showTrickPopup"
+      @close="showTrickPopup = false"
+      @agree="handleTrickAgree"
+      @reject="handleTrickReject"
+    />
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import TrickPopup from '../components/TrickPopup.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
+// Trick popup state
+const showTrickPopup = ref(false)
+
 const logout = () => {
   authStore.logout()
   router.push('/')
+}
+
+// Trick popup handlers
+const handleTrickAgree = () => {
+  console.log('User agreed to the trick! 😄')
+  showTrickPopup.value = false
+}
+
+const handleTrickReject = () => {
+  console.log('User rejected the trick! 😂')
+  showTrickPopup.value = false
 }
 
 onMounted(() => {

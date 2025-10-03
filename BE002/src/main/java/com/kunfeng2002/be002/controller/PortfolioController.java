@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/portfolio")
+@RequestMapping("/portfolio")
 @RequiredArgsConstructor
 @Slf4j
 public class PortfolioController {
@@ -23,8 +23,15 @@ public class PortfolioController {
     public ResponseEntity<PortfolioResponse> createPortfolio(
             @RequestHeader("X-User-Id") Long userId,
             @RequestBody PortfolioRequest request) {
-        PortfolioResponse response = portfolioService.createPortfolio(userId, request);
-        return ResponseEntity.ok(response);
+        log.info("Creating portfolio for user ID: {}, request: {}", userId, request);
+        try {
+            PortfolioResponse response = portfolioService.createPortfolio(userId, request);
+            log.info("Portfolio created successfully: {}", response);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error creating portfolio for user {}: {}", userId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping
