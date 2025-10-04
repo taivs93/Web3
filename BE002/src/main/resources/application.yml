@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/db_web3
     username: root
-    password: 251202
+    password: taiteasicale
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
