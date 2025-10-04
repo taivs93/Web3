@@ -29,6 +29,11 @@ export const useAuthStore = defineStore('auth', {
     shortAddress: (state) => {
       if (!state.walletAddress) return ''
       return `${state.walletAddress.slice(0, 6)}...${state.walletAddress.slice(-4)}`
+    },
+    isAdmin: (state) => {
+      // For now, allow all authenticated users to be admin
+      // In production, check user role or specific wallet addresses
+      return !!state.user && !!state.walletAddress
     }
   },
 

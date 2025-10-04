@@ -319,18 +319,35 @@ const createPortfolio = async () => {
   try {
     isLoading.value = true
     
+    console.log('Auth store state:', {
+      user: authStore.user,
+      isAuthenticated: authStore.isAuthenticated,
+      walletAddress: authStore.walletAddress
+    })
+    
     if (!authStore.user?.id) {
+      console.error('User not authenticated or missing ID:', authStore.user)
       alert('Vui lòng đăng nhập để tạo portfolio')
       return
     }
     
+    console.log('Creating portfolio with user ID:', authStore.user.id)
+    console.log('Portfolio data:', newPortfolio.value)
+    
     const response = await portfolioAPI.createPortfolio(authStore.user.id, newPortfolio.value)
+    console.log('Portfolio created successfully:', response.data)
+    
     await loadPortfolios()
     showCreateModal.value = false
     newPortfolio.value = { name: '', description: '' }
     alert('Tạo portfolio thành công!')
   } catch (error) {
     console.error('Error creating portfolio:', error)
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    })
     alert('Lỗi tạo portfolio: ' + (error.response?.data?.message || error.message))
   } finally {
     isLoading.value = false
@@ -350,7 +367,7 @@ const addToken = async () => {
       portfolioId: selectedPortfolio.value.id,
       tokenSymbol: newToken.value.symbol.toUpperCase(),
       amount: parseFloat(newToken.value.amount),
-      buyPrice: parseFloat(newToken.value.buyPrice)
+      averageBuyPrice: parseFloat(newToken.value.buyPrice)
     }
     
     await portfolioAPI.addTokenToPortfolio(authStore.user.id, tokenData)

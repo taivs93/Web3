@@ -1,55 +1,104 @@
-# Web3 Chat Bot Frontend
+# Web3 Frontend Application
 
-Frontend cho ứng dụng Web3 Chat Bot, được xây dựng với Vue 3 và Tailwind CSS.
+Ứng dụng frontend Vue.js 3 cho hệ thống Web3 Authentication và Portfolio Management.
 
 ## 🚀 Tính năng chính
 
-### 🔐 Xác thực Web3
-- Đăng nhập bằng MetaMask
-- Xác thực bằng chữ ký số
-- Quản lý profile người dùng
+### 1. Authentication & User Management
+- **MetaMask Integration**: Đăng nhập bằng ví Ethereum
+- **Signature Verification**: Xác thực danh tính bằng chữ ký số
+- **Profile Management**: Quản lý thông tin cá nhân
+- **Session Persistence**: Lưu trạng thái đăng nhập
 
-### 💼 Portfolio Management
-- Tạo và quản lý portfolio
-- Thêm/xóa token
-- Theo dõi giá real-time
-- Tính toán P&L
+### 2. Portfolio Management
+- **Portfolio Creation**: Tạo và quản lý portfolio
+- **Token Tracking**: Theo dõi token và giá trị
+- **P&L Calculation**: Tính toán lãi/lỗ
+- **Price Updates**: Cập nhật giá real-time
 
-### 🔍 Tìm kiếm Coin & Token
-- Tìm kiếm theo tên, symbol
-- Tìm kiếm theo địa chỉ contract
-- Tìm kiếm online
-- Hiển thị thông tin chi tiết
+### 3. Coin & Token Search
+- **Multi-search**: Tìm kiếm theo tên, symbol, địa chỉ contract
+- **Online Search**: Tìm kiếm trực tuyến từ API
+- **Address Lookup**: Tìm kiếm theo địa chỉ contract
+- **Real-time Data**: Dữ liệu cập nhật liên tục
 
-### 👛 Quản lý Ví
-- Theo dõi địa chỉ ví
-- Danh sách ví toàn cầu
-- Thông báo hoạt động ví
+### 4. Gas Fee Tracker
+- **Multi-network Support**: Hỗ trợ nhiều mạng blockchain
+- **Real-time Gas Prices**: Giá gas theo thời gian thực
+- **Enhanced Data**: Dữ liệu gas nâng cao
+- **Cost Estimation**: Ước tính chi phí giao dịch
 
-### ⚡ Gas Fee Widget
-- Hiển thị phí gas real-time
-- Hỗ trợ nhiều network
-- Tự động cập nhật
+### 5. Admin Panel
+- **System Health**: Kiểm tra trạng thái hệ thống
+- **Cache Management**: Quản lý cache
+- **Price Updates**: Cập nhật giá thủ công
+- **Service Monitoring**: Giám sát các dịch vụ
 
-### 🔔 Thông báo Real-time
-- WebSocket integration
-- Thông báo hoạt động ví
-- Cảnh báo giá
-- Cập nhật portfolio
+### 6. Chat Bot Integration
+- **Telegram Bot**: Tích hợp với Telegram bot
+- **Wallet Management**: Quản lý ví qua chat
+- **Command Processing**: Xử lý lệnh chat
+- **Real-time Notifications**: Thông báo real-time
 
 ## 🛠️ Công nghệ sử dụng
 
-- **Vue 3** - Framework JavaScript
-- **Vue Router** - Routing
-- **Pinia** - State management
-- **Tailwind CSS** - Styling
-- **Axios** - HTTP client
-- **Ethers.js** - Web3 integration
-- **WebSocket** - Real-time communication
+### Frontend
+- **Vue.js 3**: Framework chính
+- **Vue Router**: Routing
+- **Pinia**: State management
+- **TailwindCSS**: Styling
+- **Axios**: HTTP client
+- **Ethers.js**: Web3 integration
 
-## 📦 Cài đặt
+### Backend Integration
+- **REST API**: Giao tiếp với Spring Boot backend
+- **WebSocket**: Kết nối real-time
+- **JWT Authentication**: Xác thực token
 
+## 📁 Cấu trúc thư mục
+
+```
+src/
+├── components/          # Components tái sử dụng
+│   ├── AppLayout.vue   # Layout chính
+│   ├── ChatWidget.vue  # Widget chat
+│   ├── GasFeeWidget.vue # Widget gas fee
+│   └── NotificationBell.vue # Thông báo
+├── views/              # Các trang chính
+│   ├── Home.vue        # Trang chủ
+│   ├── Login.vue       # Đăng nhập
+│   ├── Dashboard.vue   # Dashboard
+│   ├── Portfolio.vue   # Quản lý portfolio
+│   ├── Search.vue      # Tìm kiếm coin
+│   ├── GasFee.vue      # Gas fee tracker
+│   ├── Wallet.vue      # Quản lý ví
+│   ├── Profile.vue     # Hồ sơ cá nhân
+│   └── Admin.vue       # Admin panel
+├── services/           # API services
+│   ├── api.js         # API client
+│   ├── websocket.js   # WebSocket service
+│   └── simple-websocket.js # Simple WebSocket
+├── stores/             # Pinia stores
+│   └── auth.js        # Authentication store
+├── router/             # Vue Router
+│   └── index.js       # Router configuration
+└── composables/        # Vue composables
+    └── useAuthInit.js  # Auth initialization
+```
+
+## 🚀 Cài đặt và chạy
+
+### Yêu cầu hệ thống
+- Node.js >= 16
+- npm hoặc yarn
+- MetaMask extension
+
+### Cài đặt
 ```bash
+# Clone repository
+git clone <repository-url>
+cd FE001
+
 # Cài đặt dependencies
 npm install
 
@@ -58,136 +107,174 @@ npm run dev
 
 # Build cho production
 npm run build
-
-# Preview build
-npm run preview
 ```
 
-## 🔧 Cấu hình
+### Cấu hình
+1. Đảm bảo backend đang chạy trên `http://localhost:8080`
+2. Cài đặt MetaMask extension
+3. Cấu hình network trong MetaMask nếu cần
 
-### Backend API
-Cập nhật `API_BASE_URL` trong `src/services/api.js`:
+## 📱 Sử dụng
 
-```javascript
-const API_BASE_URL = 'http://localhost:8080/api'
-```
+### 1. Đăng nhập
+1. Truy cập trang chủ
+2. Click "Bắt đầu ngay" hoặc "Đăng nhập"
+3. Kết nối MetaMask
+4. Ký thông điệp xác thực
+5. Đăng nhập thành công
 
-### WebSocket
-Cập nhật WebSocket URL trong `src/services/simple-websocket.js`:
+### 2. Quản lý Portfolio
+1. Vào trang "Portfolio"
+2. Click "Create New Portfolio"
+3. Nhập tên và mô tả
+4. Thêm token vào portfolio
+5. Theo dõi P&L
 
-```javascript
-this.ws = new WebSocket('ws://localhost:8080/api/ws')
-```
+### 3. Tìm kiếm Coin
+1. Vào trang "Tìm kiếm"
+2. Chọn loại tìm kiếm
+3. Nhập từ khóa
+4. Xem kết quả
 
-## 📱 Các trang chính
+### 4. Gas Fee Tracker
+1. Vào trang "Gas Fee"
+2. Chọn network
+3. Xem giá gas real-time
+4. Sử dụng enhanced data
 
-### 🏠 Dashboard (`/dashboard`)
-- Trang chủ với chat bot
-- Thông tin tài khoản
-- Quick commands
-- Thông báo real-time
+### 5. Admin Panel
+1. Đăng nhập với quyền admin
+2. Vào trang "Admin"
+3. Kiểm tra health status
+4. Quản lý cache và services
 
-### 💼 Portfolio (`/portfolio`)
-- Quản lý portfolio
-- Thêm/xóa token
-- Theo dõi hiệu suất
+## 🔧 API Endpoints
 
-### 🔍 Search (`/search`)
-- Tìm kiếm coin/token
-- Nhiều loại tìm kiếm
-- Hiển thị thông tin chi tiết
+### Authentication
+- `POST /api/login` - Đăng nhập
+- `GET /api/profile` - Lấy profile
+- `PUT /api/profile` - Cập nhật profile
+- `GET /api/nonce` - Lấy nonce
 
-### 👛 Wallet (`/wallet`)
-- Quản lý ví theo dõi
-- Danh sách ví toàn cầu
-- Thêm/bỏ theo dõi
+### Portfolio
+- `POST /api/portfolio` - Tạo portfolio
+- `GET /api/portfolio` - Lấy danh sách portfolio
+- `GET /api/portfolio/{id}` - Lấy chi tiết portfolio
+- `POST /api/portfolio/tokens` - Thêm token
+- `DELETE /api/portfolio/{id}/tokens/{tokenId}` - Xóa token
+- `PUT /api/portfolio/{id}/refresh` - Refresh giá
+- `DELETE /api/portfolio/{id}` - Xóa portfolio
 
-### 👤 Profile (`/profile`)
-- Thông tin cá nhân
-- Liên kết Telegram
-- Cập nhật profile
+### Coin Search
+- `GET /api/coins` - Lấy tất cả coins
+- `GET /api/coins/{address}` - Lấy coin theo địa chỉ
+- `GET /api/coins/symbol/{symbol}` - Lấy coin theo symbol
+- `GET /api/coins/search` - Tìm kiếm coin
+- `GET /api/coins/search-online` - Tìm kiếm online
 
-## 🔌 API Integration
+### Gas Fee
+- `GET /api/gas/estimate/{network}` - Ước tính gas
+- `POST /api/gas/estimate/{network}` - Ước tính gas chi tiết
 
-### Auth API
-- `POST /login` - Đăng nhập
-- `GET /profile` - Lấy profile
-- `PUT /profile` - Cập nhật profile
-- `GET /nonce` - Lấy nonce
+### Admin
+- `POST /api/admin/portfolio/update-prices` - Cập nhật giá
+- `GET /api/admin/gas/enhanced/{network}` - Gas nâng cao
+- `GET /api/admin/price/enhanced` - Giá token nâng cao
+- `POST /api/admin/cache/clear` - Xóa cache
+- `GET /api/admin/health/services` - Kiểm tra health
 
-### Portfolio API
-- `POST /portfolio` - Tạo portfolio
-- `GET /portfolio` - Lấy danh sách
-- `POST /portfolio/tokens` - Thêm token
-- `DELETE /portfolio/{id}` - Xóa portfolio
-
-### Coin API
-- `GET /coins` - Lấy tất cả coins
-- `GET /coins/search` - Tìm kiếm
-- `GET /coins/{address}` - Lấy theo địa chỉ
-
-### Wallet API
-- `GET /wallet/followed-addresses` - Ví đang theo dõi
-- `POST /wallet/follow` - Theo dõi ví
-- `POST /wallet/unfollow` - Bỏ theo dõi
-
-### Gas API
-- `GET /gas/estimate/{network}` - Ước tính gas fee
-
-## 🌐 WebSocket Events
-
-### Các loại thông báo:
-- `notification` - Thông báo hệ thống
-- `wallet-activity` - Hoạt động ví
-- `price-alert` - Cảnh báo giá
-- `portfolio-update` - Cập nhật portfolio
-- `gas-update` - Cập nhật gas fee
-
-## 🎨 UI Components
-
-### Components chính:
-- `GasFeeWidget` - Widget hiển thị gas fee
-- `NotificationBell` - Thông báo
-- `ChatWidget` - Chat bot interface
+### Chat & Wallet
+- `POST /api/chat/send` - Gửi tin nhắn
+- `POST /api/chat/link-account` - Liên kết tài khoản
+- `GET /api/wallet/followed-addresses` - Ví đang theo dõi
+- `POST /api/wallet/follow` - Theo dõi ví
+- `POST /api/wallet/unfollow` - Bỏ theo dõi ví
 
 ## 🔒 Bảo mật
 
-- Xác thực bằng MetaMask
-- Chữ ký số cho đăng nhập
-- CORS configuration
-- Input validation
+- **Signature Verification**: Xác thực chữ ký MetaMask
+- **Nonce Protection**: Bảo vệ chống replay attacks
+- **Session Management**: Quản lý phiên đăng nhập
+- **Input Validation**: Validate dữ liệu đầu vào
 
-## 📱 Responsive Design
+## 🌐 WebSocket Integration
 
-- Mobile-first approach
-- Tailwind CSS responsive utilities
-- Optimized cho mobile và desktop
+- **Real-time Updates**: Cập nhật real-time
+- **Price Alerts**: Cảnh báo giá
+- **Wallet Activity**: Hoạt động ví
+- **System Notifications**: Thông báo hệ thống
 
-## 🚀 Deployment
+## 📊 State Management
 
-### Development
+### Auth Store
+- User information
+- Wallet connection
+- Authentication state
+- Session persistence
+
+### Features
+- Reactive state
+- Local storage sync
+- Error handling
+- Loading states
+
+## 🎨 UI/UX Features
+
+- **Responsive Design**: Tương thích mọi thiết bị
+- **Dark/Light Mode**: Chế độ sáng/tối
+- **Smooth Animations**: Hiệu ứng mượt mà
+- **Loading States**: Trạng thái loading
+- **Error Handling**: Xử lý lỗi thân thiện
+
+## 🚀 Performance
+
+- **Lazy Loading**: Tải trang lazy
+- **Code Splitting**: Chia nhỏ code
+- **Caching**: Cache dữ liệu
+- **Optimized Images**: Tối ưu hình ảnh
+
+## 🔧 Development
+
+### Scripts
 ```bash
-npm run dev
+npm run dev          # Development server
+npm run build        # Build production
+npm run preview      # Preview build
 ```
 
-### Production
+### Linting
 ```bash
-npm run build
-# Deploy thư mục dist/
+npm run lint         # Check linting
+npm run lint:fix     # Fix linting issues
 ```
+
+## 📝 Changelog
+
+### v1.0.0
+- Initial release
+- Authentication system
+- Portfolio management
+- Coin search
+- Gas fee tracker
+- Admin panel
+- Chat bot integration
 
 ## 🤝 Contributing
 
 1. Fork repository
-2. Tạo feature branch
+2. Create feature branch
 3. Commit changes
 4. Push to branch
-5. Tạo Pull Request
+5. Create Pull Request
 
 ## 📄 License
 
-MIT License
+MIT License - xem file LICENSE để biết thêm chi tiết.
 
 ## 🆘 Support
 
-Nếu gặp vấn đề, vui lòng tạo issue trên GitHub repository.
+Nếu gặp vấn đề, vui lòng tạo issue trên GitHub hoặc liên hệ team phát triển.
+
+---
+
+**Lưu ý**: Đây là phiên bản development. Không sử dụng trong môi trường production mà không có kiểm tra bảo mật đầy đủ.

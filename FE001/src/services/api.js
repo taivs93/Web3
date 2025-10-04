@@ -1,6 +1,9 @@
 import axios from 'axios'
+import { getConfig } from '../../ngrok-config.js'
 
-const API_BASE_URL = 'http://localhost:8080/api'
+// Tự động phát hiện môi trường tunnel
+const config = getConfig()
+const API_BASE_URL = config.API_BASE_URL
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -36,7 +39,7 @@ export const chatAPI = {
   linkAccount: (walletAddress) => 
     apiClient.post('/chat/link-account', { walletAddress }),
   
-  // Tạo linking code (GET)
+  // Tạo linking code (GET từ ChatController)
   getLinkAccount: (walletAddress) => 
     apiClient.get('/chat/link_account', { params: { walletAddress } }),
   
@@ -68,39 +71,27 @@ export const gasAPI = {
     apiClient.get(`/gas/estimate/${network}`)
 }
 
-// Search API
-export const searchAPI = {
-  // Tìm kiếm tổng quát
-  generalSearch: (query, network, page = 0, size = 20) =>
-    apiClient.post('/search/general', { query, network, page, size }),
+// Admin API
+export const adminAPI = {
+  // Trigger portfolio price update
+  triggerPortfolioPriceUpdate: () =>
+    apiClient.post('/admin/portfolio/update-prices'),
 
-  // Tìm kiếm block
-  searchBlock: (query, network) =>
-    apiClient.get('/search/block', { params: { query, network } }),
+  // Get enhanced gas price
+  getEnhancedGasPrice: (network) =>
+    apiClient.get(`/admin/gas/enhanced/${network}`),
 
-  // Tìm kiếm transaction
-  searchTransaction: (query, network) =>
-    apiClient.get('/search/transaction', { params: { query, network } }),
+  // Get enhanced token prices
+  getEnhancedTokenPrices: (symbols) =>
+    apiClient.get('/admin/price/enhanced', { params: { symbols: symbols.join(',') } }),
 
-  // Tìm kiếm address
-  searchAddress: (query, network, page = 0, size = 20) =>
-    apiClient.get('/search/address', { params: { query, network, page, size } }),
+  // Clear all caches
+  clearAllCaches: () =>
+    apiClient.post('/admin/cache/clear'),
 
-  // Tìm kiếm token
-  searchToken: (query, network, page = 0, size = 20) =>
-    apiClient.get('/search/token', { params: { query, network, page, size } }),
-
-  // Lấy thống kê network
-  getNetworkStats: (network) =>
-    apiClient.get(`/search/stats/${network}`),
-
-  // Lấy top tokens
-  getTopTokens: (network, limit = 10) =>
-    apiClient.get('/search/tokens/top', { params: { network, limit } }),
-
-  // Lấy recent transactions
-  getRecentTransactions: (network, limit = 10) =>
-    apiClient.get('/search/transactions/recent', { params: { network, limit } })
+  // Check services health
+  checkServicesHealth: () =>
+    apiClient.get('/admin/health/services')
 }
 
 // Wallet API
@@ -190,12 +181,9 @@ export const coinAPI = {
 
 // WebSocket API
 export const websocketAPI = {
-  // WebSocket endpoint
+  // WebSocket endpoint - tự động phát hiện tunnel
   getWebSocketUrl: () => {
-    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
-    const host = window.location.hostname
-    const port = '8080'
-    return `${protocol}//${host}:${port}/api/ws`
+    return config.WS_URL
   }
 }
 

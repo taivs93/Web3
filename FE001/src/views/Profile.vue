@@ -176,6 +176,20 @@
         </div>
       </div>
     </div>
+
+    <!-- Toast Notification -->
+    <div 
+      v-if="showToast" 
+      class="fixed top-4 right-4 z-50 transform transition-all duration-300 ease-in-out"
+      :class="showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'"
+    >
+      <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="font-medium">{{ toastMessage }}</span>
+      </div>
+    </div>
 </template>
 
 <script setup>
@@ -195,15 +209,18 @@ const form = ref({
 
 const isLoadingBalance = ref(false)
 const isTelegramLinked = ref(false)
+const showToast = ref(false)
+const toastMessage = ref('')
 
 // Methods
 
 const copyAddress = async () => {
   try {
     await navigator.clipboard.writeText(authStore.walletAddress)
-    alert('Đã sao chép địa chỉ ví!')
+    showToastMessage('Đã sao chép địa chỉ ví!')
   } catch (error) {
     console.error('Lỗi sao chép:', error)
+    showToastMessage('Lỗi sao chép địa chỉ ví!')
   }
 }
 
@@ -246,17 +263,35 @@ const refreshProfile = async () => {
   }
 }
 
+const showToastMessage = (message) => {
+  toastMessage.value = message
+  showToast.value = true
+  setTimeout(() => {
+    showToast.value = false
+  }, 3000)
+}
+
 const getLinkingCode = async () => {
   try {
-    const response = await chatAPI.getLinkingCode()
+    if (!authStore.walletAddress) {
+      showToastMessage('Vui lòng đăng nhập trước!')
+      return
+    }
+    
+    const response = await chatAPI.getLinkAccount(authStore.walletAddress)
+    console.log('Linking code response:', response.data)
+    
     if (response.data && response.data.data) {
-      const code = response.data.data.code
+      const code = response.data.data // Backend trả về code trực tiếp trong data
       await navigator.clipboard.writeText(code)
-      alert(`Đã sao chép linking code: ${code}`)
+      showToastMessage('Đã sao chép mã liên kết')
+    } else {
+      console.error('Invalid response structure:', response.data)
+      showToastMessage('Lỗi: Không thể lấy mã liên kết')
     }
   } catch (error) {
     console.error('Error getting linking code:', error)
-    alert('Lỗi khi lấy linking code: ' + error.message)
+    showToastMessage('Lỗi khi lấy mã liên kết: ' + error.message)
   }
 }
 
