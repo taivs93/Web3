@@ -2,11 +2,13 @@ package com.kunfeng2002.be002.service;
 
 import com.kunfeng2002.be002.dto.request.RecurringInvestmentRequest;
 import com.kunfeng2002.be002.dto.response.RecurringInvestmentResponse;
+import com.kunfeng2002.be002.entity.Chat;
 import com.kunfeng2002.be002.entity.InvestmentFrequency;
 import com.kunfeng2002.be002.entity.RecurringInvestment;
 import com.kunfeng2002.be002.entity.User;
 import com.kunfeng2002.be002.event.TelegramMessageEvent;
 import com.kunfeng2002.be002.exception.DataNotFoundException;
+import com.kunfeng2002.be002.repository.ChatRepository;
 import com.kunfeng2002.be002.repository.RecurringInvestmentRepository;
 import com.kunfeng2002.be002.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class RecurringInvestmentService {
 
     private final RecurringInvestmentRepository recurringInvestmentRepository;
     private final UserRepository userRepository;
+    private final ChatRepository chatRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -100,12 +103,16 @@ public class RecurringInvestmentService {
 
         for (RecurringInvestment investment : dueInvestments) {
             try {
-                User user = userRepository.findById(investment.getUserId()).orElse(null);
-                if (user != null && user.getTelegramUserId() != null) {
-                    String message = buildNotificationMessage(investment);
-                    eventPublisher.publishEvent(new TelegramMessageEvent(user.getTelegramUserId(), message));
-                    log.info("Sent notification to user {} for investment {}", user.getId(), investment.getId());
+                Chat chat = chatRepository.findByUserId(investment.getUserId()).orElse(null);
+                if (chat == null) {
+                    log.warn("No chat found for user {} (investment {}). User needs to link Telegram first.", 
+                        investment.getUserId(), investment.getId());
+                    continue;
                 }
+
+                String message = buildNotificationMessage(investment);
+                eventPublisher.publishEvent(new TelegramMessageEvent(chat.getChatId(), message));
+                log.info("Sent notification to chatId {} for investment {}", chat.getChatId(), investment.getId());
 
                 investment.setNextNotificationDate(calculateNextRecurringDate(investment.getNextNotificationDate(), investment.getFrequency()));
                 recurringInvestmentRepository.save(investment);
