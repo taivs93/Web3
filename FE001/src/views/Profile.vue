@@ -183,9 +183,25 @@
       class="fixed top-4 right-4 z-50 transform transition-all duration-300 ease-in-out"
       :class="showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'"
     >
-      <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div 
+        class="text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2"
+        :class="{
+          'bg-green-500': toastType === 'success',
+          'bg-red-500': toastType === 'error',
+          'bg-blue-500': toastType === 'info'
+        }"
+      >
+        <!-- Success Icon -->
+        <svg v-if="toastType === 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <!-- Error Icon -->
+        <svg v-else-if="toastType === 'error'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        <!-- Info Icon -->
+        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <span class="font-medium">{{ toastMessage }}</span>
       </div>
@@ -211,6 +227,7 @@ const isLoadingBalance = ref(false)
 const isTelegramLinked = ref(false)
 const showToast = ref(false)
 const toastMessage = ref('')
+const toastType = ref('success') // 'success', 'error', 'info'
 
 // Methods
 
@@ -220,17 +237,17 @@ const copyAddress = async () => {
     showToastMessage('Đã sao chép địa chỉ ví!')
   } catch (error) {
     console.error('Lỗi sao chép:', error)
-    showToastMessage('Lỗi sao chép địa chỉ ví!')
+    showToastMessage('Lỗi sao chép địa chỉ ví!', 'error')
   }
 }
 
 const updateProfile = async () => {
   try {
     await authStore.updateProfile(form.value)
-    alert('Cập nhật thành công!')
+    showToastMessage('Cập nhật thành công!')
   } catch (error) {
     console.error('Lỗi cập nhật:', error)
-    alert('Lỗi cập nhật: ' + error.message)
+    showToastMessage('Lỗi cập nhật: ' + error.message, 'error')
   }
 }
 
@@ -256,15 +273,16 @@ const refreshProfile = async () => {
     console.log('Profile refreshed manually')
     console.log('Current user after refresh:', authStore.user)
     console.log('Telegram User ID after refresh:', authStore.user?.telegram_user_id)
-    alert('Đã cập nhật thông tin profile!')
+    showToastMessage('Đã cập nhật thông tin profile!')
   } catch (error) {
     console.error('Error refreshing profile:', error)
-    alert('Lỗi khi cập nhật profile: ' + error.message)
+    showToastMessage('Lỗi khi cập nhật profile: ' + error.message, 'error')
   }
 }
 
-const showToastMessage = (message) => {
+const showToastMessage = (message, type = 'success') => {
   toastMessage.value = message
+  toastType.value = type
   showToast.value = true
   setTimeout(() => {
     showToast.value = false
@@ -274,7 +292,7 @@ const showToastMessage = (message) => {
 const getLinkingCode = async () => {
   try {
     if (!authStore.walletAddress) {
-      showToastMessage('Vui lòng đăng nhập trước!')
+      showToastMessage('Vui lòng đăng nhập trước!', 'error')
       return
     }
     
@@ -287,11 +305,11 @@ const getLinkingCode = async () => {
       showToastMessage('Đã sao chép mã liên kết')
     } else {
       console.error('Invalid response structure:', response.data)
-      showToastMessage('Lỗi: Không thể lấy mã liên kết')
+      showToastMessage('Lỗi: Không thể lấy mã liên kết', 'error')
     }
   } catch (error) {
     console.error('Error getting linking code:', error)
-    showToastMessage('Lỗi khi lấy mã liên kết: ' + error.message)
+    showToastMessage('Lỗi khi lấy mã liên kết: ' + error.message, 'error')
   }
 }
 
