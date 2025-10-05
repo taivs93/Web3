@@ -27,7 +27,6 @@ public class GasService {
         // Validate request
         FeeRequestValidator.ValidationResult validationResult = validator.validateFeeRequest(request, network);
         if (!validationResult.isValid()) {
-            log.warn("Invalid fee request for network {}: {}", network, validationResult.getErrorMessage());
             throw new IllegalArgumentException("Invalid request: " + validationResult.getErrorMessage());
         }
 
@@ -43,19 +42,16 @@ public class GasService {
             // Try enhanced gas tracking first
             BigInteger enhancedGasPrice = getEnhancedGasPrice(normalizedNetwork);
             if (enhancedGasPrice != null) {
-                log.info("Using enhanced gas price for {}: {}", normalizedNetwork, enhancedGasPrice);
                 return buildResponseFromGasPrice(normalizedNetwork, enhancedGasPrice, request);
             }
 
             // Fallback to cached price
             BigInteger cachedGasPrice = cacheService.getGasPrice(normalizedNetwork);
             if (cachedGasPrice != null) {
-                log.info("Using cached gas price for {}: {}", normalizedNetwork, cachedGasPrice);
                 return buildResponseFromGasPrice(normalizedNetwork, cachedGasPrice, request);
             }
 
             // Final fallback to service implementation
-            log.info("Fetching fresh gas price for {} from service", normalizedNetwork);
             FeeResponse freshResponse = service.getFeeEstimate(request);
             
             // Cache the fresh response
@@ -66,7 +62,6 @@ public class GasService {
             return freshResponse;
 
         } catch (Exception e) {
-            log.error("Error getting fee estimate for network {}", network, e);
             throw new RuntimeException("Failed to get fee estimate: " + e.getMessage(), e);
         }
     }
@@ -97,7 +92,6 @@ public class GasService {
                     return null;
             }
         } catch (Exception e) {
-            log.warn("Failed to get enhanced gas price for {}: {}", network, e.getMessage());
             return null;
         }
     }

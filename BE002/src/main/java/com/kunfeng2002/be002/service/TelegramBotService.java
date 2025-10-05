@@ -4,12 +4,15 @@ import com.kunfeng2002.be002.dto.request.AddTokenRequest;
 import com.kunfeng2002.be002.dto.request.FeeRequest;
 import com.kunfeng2002.be002.dto.request.CommandRequest;
 import com.kunfeng2002.be002.dto.request.PortfolioRequest;
+import com.kunfeng2002.be002.dto.request.RecurringInvestmentRequest;
 import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.dto.response.FeeResponse;
 import com.kunfeng2002.be002.dto.response.NewCoinResponse;
 import com.kunfeng2002.be002.dto.response.PortfolioResponse;
+import com.kunfeng2002.be002.dto.response.RecurringInvestmentResponse;
 import com.kunfeng2002.be002.entity.Chat;
 import com.kunfeng2002.be002.entity.ChatType;
+import com.kunfeng2002.be002.entity.InvestmentFrequency;
 import com.kunfeng2002.be002.entity.User;
 import com.kunfeng2002.be002.event.TelegramMessageEvent;
 import com.kunfeng2002.be002.exception.DataNotFoundException;
@@ -25,6 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +51,7 @@ public class TelegramBotService {
     private final PortfolioService portfolioService;
     private final OnlineSearchService onlineSearchService;
     private final BinanceApiService binanceApiService;
+    private final RecurringInvestmentService recurringInvestmentService;
 
     @Transactional
     public void startBot(Long telegramUserId, Long chatId, String chatType, String title) {
@@ -311,6 +318,18 @@ public class TelegramBotService {
             case "/newcoins":
                 return handleNewCoinsCommand(chatId);
 
+            case "/dca":
+                return handleDCACommand(chatId, argument);
+
+            case "/mydca":
+                return handleMyDCACommand(chatId);
+
+            case "/stopdca":
+                return handleStopDCACommand(chatId, argument);
+
+            case "/testdca":
+                return handleTestDCACommand(chatId);
+
             default:
                 return buildResponse("Unknown command.\nType /help to see available commands.");
         }
@@ -319,11 +338,7 @@ public class TelegramBotService {
     private String getHelpText() {
         return """
                 Welcome to Web3 Chat Bot!
-
-        FeeRequest feeRequest = new FeeRequest();
-        feeRequest.setGasLimit(gasLimit);
-
-        return gasService.getFeeEstimate(network, feeRequest);
+                
                 Commands:
                 /start - Show welcome message
                 /help - Show this help
@@ -341,6 +356,12 @@ public class TelegramBotService {
                 /addtoken <symbol> <amount> <price> - Add token to portfolio
                 /myportfolios - List your portfolios
                 /newcoins - Show 20 newest coins on Binance
+                
+                DCA Commands:
+                /dca <symbol> <amount> <WEEKLY|MONTHLY|QUARTERLY> <HH:MM> - Create DCA plan
+                /mydca - List your DCA plans
+                /stopdca <id> - Stop DCA plan
+                /testdca - Test DCA notifications now
                 """;
     }
 
@@ -587,6 +608,172 @@ public class TelegramBotService {
         } catch (Exception e) {
             log.error("Error fetching new coins for chat {}", chatId, e);
             return buildResponse("Error fetching new coins. Please try again later.");
+        }
+    }
+
+    private ChatMessageResponse handleDCACommand(Long chatId, String argument) {
+        try {
+            Long userId = getUserIdByChatId(chatId);
+            if (userId == null) {
+                return buildResponse("DCA commands require account linking!\n\n" +
+                    "To use DCA features:\n" +
+                    "1. Go to web interface\n" +
+                    "2. Login with your wallet\n" +
+                    "3. Click 'Lấy Linking Code'\n" +
+                    "4. Send /link <code> in this chat");
+            }
+
+            if (argument == null || argument.trim().isEmpty()) {
+                return buildResponse("Invalid format. Use:\n/dca <symbol> <amount> <frequency> <HH:MM>\n\nExample:\n/dca BTC 100 MONTHLY 09:00\n\nFrequency: WEEKLY, MONTHLY, QUARTERLY");
+            }
+
+            String[] parts = argument.trim().split("\\s+");
+            if (parts.length != 4) {
+                return buildResponse("Invalid format. Use:\n/dca <symbol> <amount> <frequency> <HH:MM>\n\nExample:\n/dca BTC 100 MONTHLY 09:00");
+            }
+
+            String symbol = parts[0].toUpperCase();
+            BigDecimal amount;
+            try {
+                amount = new BigDecimal(parts[1]);
+                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    return buildResponse("Amount must be greater than 0");
+                }
+            } catch (NumberFormatException e) {
+                return buildResponse("Invalid amount format. Use numbers only.");
+            }
+
+            String frequencyStr = parts[2].toUpperCase();
+            InvestmentFrequency frequency;
+            try {
+                frequency = InvestmentFrequency.valueOf(frequencyStr);
+            } catch (IllegalArgumentException e) {
+                return buildResponse("Invalid frequency. Use: WEEKLY, MONTHLY, or QUARTERLY");
+            }
+
+            String timeStr = parts[3];
+            LocalTime notificationTime;
+            try {
+                notificationTime = LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
+            } catch (DateTimeParseException e) {
+                return buildResponse("Invalid time format. Use HH:MM format (e.g., 09:00, 14:30)");
+            }
+
+            RecurringInvestmentRequest request = new RecurringInvestmentRequest();
+            request.setCoinSymbol(symbol);
+            request.setAmount(amount);
+            request.setFrequency(frequency);
+            request.setNotificationTime(notificationTime);
+
+            RecurringInvestmentResponse investment = 
+                recurringInvestmentService.createInvestment(userId, request);
+
+            String frequencyText = frequency == InvestmentFrequency.WEEKLY ? "hàng tuần" :
+                                 frequency == InvestmentFrequency.MONTHLY ? "hàng tháng" : "hàng quý";
+
+            return buildResponse(String.format(
+                "DCA Plan Created Successfully!\n\n" +
+                "Coin: %s\n" +
+                "Amount: %s\n" +
+                "Frequency: %s\n" +
+                "Notification time: %s\n" +
+                "Next notification: %s\n\n" +
+                "You will receive reminders via Telegram %s at %s",
+                investment.getCoinSymbol(),
+                investment.getAmount(),
+                frequencyText,
+                investment.getNotificationTime(),
+                investment.getNextNotificationDate(),
+                frequencyText,
+                investment.getNotificationTime()
+            ));
+
+        } catch (Exception e) {
+            log.error("Error creating DCA plan for chat {}", chatId, e);
+            return buildResponse("Error creating DCA plan: " + e.getMessage());
+        }
+    }
+
+    private ChatMessageResponse handleMyDCACommand(Long chatId) {
+        try {
+            Long userId = getUserIdByChatId(chatId);
+            if (userId == null) {
+                return buildResponse("DCA commands require account linking!\n\n" +
+                    "Send /link <code> to link your account first");
+            }
+
+            List<RecurringInvestmentResponse> investments = 
+                recurringInvestmentService.getUserInvestments(userId);
+
+            if (investments.isEmpty()) {
+                return buildResponse("No DCA plans found.\n\nCreate one with:\n/dca <symbol> <amount> <frequency> <HH:MM>\n\nExample: /dca BTC 100 MONTHLY 09:00");
+            }
+
+            StringBuilder response = new StringBuilder("Your DCA Plans:\n\n");
+            for (RecurringInvestmentResponse inv : investments) {
+                String frequencyText = inv.getFrequency() == InvestmentFrequency.WEEKLY ? "Hàng tuần" :
+                                     inv.getFrequency() == InvestmentFrequency.MONTHLY ? "Hàng tháng" : "Hàng quý";
+
+                response.append(String.format("ID: %d\n", inv.getId()));
+                response.append(String.format("Coin: %s\n", inv.getCoinSymbol()));
+                response.append(String.format("Amount: %s\n", inv.getAmount()));
+                response.append(String.format("Frequency: %s\n", frequencyText));
+                response.append(String.format("Time: %s\n", inv.getNotificationTime()));
+                response.append(String.format("Next: %s\n", inv.getNextNotificationDate()));
+                response.append(String.format("Status: %s\n\n", inv.getIsActive() ? "Active" : "Stopped"));
+            }
+
+            response.append("Use /stopdca <id> to stop a plan");
+            return buildResponse(response.toString());
+
+        } catch (Exception e) {
+            log.error("Error fetching DCA plans for chat {}", chatId, e);
+            return buildResponse("Error fetching DCA plans: " + e.getMessage());
+        }
+    }
+
+    private ChatMessageResponse handleStopDCACommand(Long chatId, String argument) {
+        try {
+            Long userId = getUserIdByChatId(chatId);
+            if (userId == null) {
+                return buildResponse("DCA commands require account linking!");
+            }
+
+            if (argument == null || argument.trim().isEmpty()) {
+                return buildResponse("Please provide DCA plan ID.\n\nUse: /stopdca <id>\n\nGet ID from /mydca");
+            }
+
+            Long investmentId;
+            try {
+                investmentId = Long.parseLong(argument.trim());
+            } catch (NumberFormatException e) {
+                return buildResponse("Invalid ID format. Use: /stopdca <id>");
+            }
+
+            recurringInvestmentService.deleteInvestment(userId, investmentId);
+            return buildResponse(String.format("DCA plan #%d stopped successfully!", investmentId));
+
+        } catch (DataNotFoundException e) {
+            return buildResponse("DCA plan not found or you don't have permission.");
+        } catch (Exception e) {
+            log.error("Error stopping DCA plan for chat {}", chatId, e);
+            return buildResponse("Error stopping DCA plan: " + e.getMessage());
+        }
+    }
+
+    private ChatMessageResponse handleTestDCACommand(Long chatId) {
+        try {
+            Long userId = getUserIdByChatId(chatId);
+            if (userId == null) {
+                return buildResponse("DCA commands require account linking!");
+            }
+
+            recurringInvestmentService.sendScheduledNotifications();
+            return buildResponse("Manual DCA notification check triggered!\nCheck your messages for any due notifications.");
+
+        } catch (Exception e) {
+            log.error("Error testing DCA notifications for chat {}", chatId, e);
+            return buildResponse("Error testing DCA: " + e.getMessage());
         }
     }
 }

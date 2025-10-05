@@ -49,8 +49,7 @@ public class GasTrackerService {
             
             // Final fallback
             if (gasPrice == null) {
-                gasPrice = BigInteger.valueOf(30_000_000_000L); // 30 Gwei
-                log.warn("Using fallback Ethereum gas price: {} Gwei", gasPrice.divide(BigInteger.valueOf(1_000_000_000)));
+                gasPrice = BigInteger.valueOf(30_000_000_000L);
             }
 
             // Cache the result
@@ -58,7 +57,6 @@ public class GasTrackerService {
             return gasPrice;
 
         } catch (Exception e) {
-            log.error("Error getting Ethereum gas price", e);
             return BigInteger.valueOf(30_000_000_000L);
         }
     }
@@ -77,8 +75,7 @@ public class GasTrackerService {
             
             // Fallback
             if (gasPrice == null) {
-                gasPrice = BigInteger.valueOf(5_000_000_000L); // 5 Gwei
-                log.warn("Using fallback BSC gas price: {} Gwei", gasPrice.divide(BigInteger.valueOf(1_000_000_000)));
+                gasPrice = BigInteger.valueOf(5_000_000_000L);
             }
 
             // Cache the result
@@ -86,7 +83,6 @@ public class GasTrackerService {
             return gasPrice;
 
         } catch (Exception e) {
-            log.error("Error getting BSC gas price", e);
             return BigInteger.valueOf(5_000_000_000L);
         }
     }
@@ -94,7 +90,6 @@ public class GasTrackerService {
     private BigInteger getEtherscanGasPrice() {
         try {
             if (etherscanApiKey == null || etherscanApiKey.isEmpty()) {
-                log.debug("Etherscan API key not configured");
                 return null;
             }
 
@@ -108,16 +103,12 @@ public class GasTrackerService {
 
             if ("1".equals(jsonNode.get("status").asText())) {
                 JsonNode result = jsonNode.get("result");
-                // Get standard gas price in Gwei and convert to Wei
                 long gasPriceGwei = result.get("ProposeGasPrice").asLong();
                 BigInteger gasPriceWei = BigInteger.valueOf(gasPriceGwei).multiply(BigInteger.valueOf(1_000_000_000L));
-                
-                log.info("Etherscan gas price: {} Gwei", gasPriceGwei);
                 return gasPriceWei;
             }
 
         } catch (Exception e) {
-            log.warn("Failed to get Etherscan gas price: {}", e.getMessage());
         }
         
         return null;
@@ -129,15 +120,11 @@ public class GasTrackerService {
             String response = restTemplate.getForObject(url, String.class);
             JsonNode jsonNode = objectMapper.readTree(response);
 
-            // Get standard gas price
             long gasPriceWei = jsonNode.get("standard").asLong();
             BigInteger gasPrice = BigInteger.valueOf(gasPriceWei);
-            
-            log.info("1inch gas price: {} Gwei", gasPrice.divide(BigInteger.valueOf(1_000_000_000)));
             return gasPrice;
 
         } catch (Exception e) {
-            log.warn("Failed to get 1inch gas price: {}", e.getMessage());
         }
         
         return null;
@@ -145,8 +132,6 @@ public class GasTrackerService {
 
     private BigInteger getBscGasStationPrice() {
         try {
-            // BSC doesn't have a reliable gas station API like Ethereum
-            // We can use BSCScan API for current gas price
             String url = String.format(
                 "https://api.bscscan.com/api?module=proxy&action=eth_gasPrice&apikey=%s",
                 bscscanApiKey
@@ -158,13 +143,10 @@ public class GasTrackerService {
             if (jsonNode.has("result")) {
                 String gasPriceHex = jsonNode.get("result").asText();
                 BigInteger gasPrice = new BigInteger(gasPriceHex.substring(2), 16);
-                
-                log.info("BSCScan gas price: {} Gwei", gasPrice.divide(BigInteger.valueOf(1_000_000_000)));
                 return gasPrice;
             }
 
         } catch (Exception e) {
-            log.warn("Failed to get BSCScan gas price: {}", e.getMessage());
         }
         
         return null;
@@ -174,9 +156,7 @@ public class GasTrackerService {
         try {
             redisTemplate.delete(CACHE_KEY_PREFIX + "ethereum");
             redisTemplate.delete(CACHE_KEY_PREFIX + "bsc");
-            log.info("Gas tracker cache cleared");
         } catch (Exception e) {
-            log.error("Error clearing gas tracker cache", e);
         }
     }
 }
