@@ -7,6 +7,29 @@
 -- USE be002_db;
 
 -- =============================================
+-- DROP TẤT CẢ CÁC TRIGGER
+-- =============================================
+DROP TRIGGER IF EXISTS portfolio_tokens_before_update;
+DROP TRIGGER IF EXISTS portfolio_tokens_before_insert;
+DROP TRIGGER IF EXISTS tokens_before_update;
+DROP TRIGGER IF EXISTS tokens_before_insert;
+DROP TRIGGER IF EXISTS portfolios_before_update;
+DROP TRIGGER IF EXISTS portfolios_before_insert;
+
+-- =============================================
+-- DROP TẤT CẢ CÁC BẢNG (Theo thứ tự ngược)
+-- =============================================
+DROP TABLE IF EXISTS recurring_investments;
+DROP TABLE IF EXISTS portfolio_tokens;
+DROP TABLE IF EXISTS portfolios;
+DROP TABLE IF EXISTS tokens;
+DROP TABLE IF EXISTS coins;
+DROP TABLE IF EXISTS follows;
+DROP TABLE IF EXISTS chats;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS wallets;
+
+-- =============================================
 -- 1. BẢNG WALLETS
 -- =============================================
 CREATE TABLE wallets (
@@ -196,6 +219,26 @@ CREATE INDEX idx_portfolios_is_active ON portfolios(is_active);
 CREATE INDEX idx_portfolio_tokens_portfolio_id ON portfolio_tokens(portfolio_id);
 CREATE INDEX idx_portfolio_tokens_token_id ON portfolio_tokens(token_id);
 CREATE INDEX idx_portfolio_tokens_added_at ON portfolio_tokens(added_at);
+
+CREATE TABLE recurring_investments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    coin_symbol VARCHAR(20) NOT NULL,
+    coin_address VARCHAR(42),
+    amount DECIMAL(36,18) NOT NULL,
+    frequency ENUM('WEEKLY', 'MONTHLY', 'QUARTERLY') NOT NULL,
+    notification_time TIME NOT NULL,
+    next_notification_date TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_recurring_investments_user_id ON recurring_investments(user_id);
+CREATE INDEX idx_recurring_investments_is_active ON recurring_investments(is_active);
+CREATE INDEX idx_recurring_investments_next_notification_date ON recurring_investments(next_notification_date);
 
 -- =============================================
 -- TẠO CÁC TRIGGER ĐỂ TỰ ĐỘNG CẬP NHẬT TIMESTAMP
