@@ -3,11 +3,8 @@ package com.kunfeng2002.be002.Telegram;
 import com.kunfeng2002.be002.dto.request.CommandRequest;
 import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.event.TelegramMessageEvent;
-import com.kunfeng2002.be002.service.GasService;
 import com.kunfeng2002.be002.service.TelegramBotService;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -54,7 +51,8 @@ public class Bot extends TelegramLongPollingBot {
         log.info("Received message in chat {}: {}", chatId, text);
 
         CommandRequest request = new CommandRequest();
-        request.setCommand(text.split(" ")[0]);
+        String rawCommand = text.split(" ")[0];
+        request.setCommand(extractCommand(rawCommand));
         request.setArgument(text.contains(" ") ? text.substring(text.indexOf(" ") + 1).trim() : "");
 
         ChatMessageResponse response;
@@ -82,6 +80,20 @@ public class Bot extends TelegramLongPollingBot {
             log.error("Failed to send message to {}: {}", chatId, e.getMessage(), e);
         }
     }
+
+    private String extractCommand(String rawCommand) {
+        if (rawCommand == null || rawCommand.isEmpty()) {
+            return "";
+        }
+        
+        int atIndex = rawCommand.indexOf("@");
+        if (atIndex > 0) {
+            return rawCommand.substring(0, atIndex);
+        }
+        
+        return rawCommand;
+    }
+
     @EventListener
     public void onTelegramMessageEvent(TelegramMessageEvent event) {
         sendText(event.chatId(), event.message());
