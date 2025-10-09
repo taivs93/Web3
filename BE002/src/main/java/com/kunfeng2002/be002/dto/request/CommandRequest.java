@@ -18,4 +18,3 @@ public class CommandRequest {
     private String walletAddress;
     private String argument;
 }
-
