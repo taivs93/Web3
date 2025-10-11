@@ -48,18 +48,27 @@ public class Bot extends TelegramLongPollingBot {
         Long chatId = message.getChatId();
         String text = message.getText().trim();
 
-        log.info("Received message in chat {}: {}", chatId, text);
+        System.out.println("Received message in chat " + chatId + ": " + text);
 
-        CommandRequest request = new CommandRequest();
+        if (!isValidCommand(text, message)) {
+            System.out.println("Ignoring non-command message: " + text);
+            return;
+        }
+
         String rawCommand = text.split(" ")[0];
-        request.setCommand(extractCommand(rawCommand));
-        request.setArgument(text.contains(" ") ? text.substring(text.indexOf(" ") + 1).trim() : "");
+        String command = extractCommand(rawCommand);
+        String argument = text.contains(" ") ? text.substring(text.indexOf(" ") + 1).trim() : "";
+        
+        CommandRequest request = new CommandRequest();
+        request.setCommand(command);
+        request.setArgument(argument);
 
         ChatMessageResponse response;
         try {
             response = telegramBotService.processTelegramCommand(request, chatId);
         } catch (Exception e) {
-            log.error("Error processing command {} for bot", text, e);
+            System.err.println("Error processing command " + text + " for bot: " + e.getMessage());
+            e.printStackTrace();
             response = ChatMessageResponse.builder()
                     .message("An error occurred while processing your command.")
                     .build();
@@ -77,8 +86,40 @@ public class Bot extends TelegramLongPollingBot {
                     .text(text)
                     .build());
         } catch (TelegramApiException e) {
-            log.error("Failed to send message to {}: {}", chatId, e.getMessage(), e);
+            System.err.println("Failed to send message to " + chatId + ": " + e.getMessage());
+            e.printStackTrace();
         }
+    }
+
+    private boolean isValidCommand(String text, Message message) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+        
+        if (!text.startsWith("/")) {
+            return false;
+        }
+        
+        String rawCommand = text.split(" ")[0];
+        boolean isGroupChat = message.getChat().isGroupChat() || message.getChat().isSuperGroupChat();
+        
+        if (rawCommand.contains("@")) {
+            String[] parts = rawCommand.split("@");
+            if (parts.length == 2) {
+                String command = parts[0];
+                String botName = parts[1];
+                
+                if (command.startsWith("/") && command.length() > 1) {
+                    return botName.equals(botUsername);
+                }
+            }
+        }
+        
+        if (!isGroupChat) {
+            return rawCommand.startsWith("/") && rawCommand.length() > 1;
+        }
+        
+        return false;
     }
 
     private String extractCommand(String rawCommand) {
