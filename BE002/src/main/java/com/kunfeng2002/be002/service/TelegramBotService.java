@@ -8,6 +8,7 @@ import com.kunfeng2002.be002.dto.response.ChatMessageResponse;
 import com.kunfeng2002.be002.dto.response.FeeResponse;
 import com.kunfeng2002.be002.dto.response.NewCoinResponse;
 import com.kunfeng2002.be002.dto.response.PortfolioResponse;
+import com.kunfeng2002.be002.dto.response.WhaleAlertResponse;
 import com.kunfeng2002.be002.entity.Chat;
 import com.kunfeng2002.be002.entity.ChatType;
 import com.kunfeng2002.be002.entity.User;
@@ -45,6 +46,7 @@ public class TelegramBotService {
     private final PortfolioService portfolioService;
     private final OnlineSearchService onlineSearchService;
     private final BinanceApiService binanceApiService;
+    private final WhaleAlertService whaleAlertService;
 
     @Transactional
     public void startBot(Long telegramUserId, Long chatId, String chatType, String title) {
@@ -311,6 +313,9 @@ public class TelegramBotService {
             case "/newcoins":
                 return handleNewCoinsCommand(chatId);
 
+            case "/whale":
+                return handleWhaleCommand(chatId);
+
             default:
                 return buildResponse("Unknown command.\nType /help to see available commands.");
         }
@@ -341,6 +346,7 @@ public class TelegramBotService {
                 /addtoken <symbol> <amount> <price> - Add token to portfolio
                 /myportfolios - List your portfolios
                 /newcoins - Show 20 newest coins on Binance
+                /whale - Show whale alerts (large transactions)
                 """;
     }
 
@@ -587,6 +593,40 @@ public class TelegramBotService {
         } catch (Exception e) {
             log.error("Error fetching new coins for chat {}", chatId, e);
             return buildResponse("Error fetching new coins. Please try again later.");
+        }
+    }
+
+    private ChatMessageResponse handleWhaleCommand(Long chatId) {
+        try {
+            List<WhaleAlertResponse> whaleAlerts = whaleAlertService.getWhaleAlerts();
+            
+            if (whaleAlerts.isEmpty()) {
+                return buildResponse("Không có dữ liệu whale alert tại thời điểm này. Vui lòng thử lại sau.");
+            }
+
+            StringBuilder response = new StringBuilder();
+            response.append("Whale Alert - Giao dịch lớn\n\n");
+            
+            for (int i = 0; i < whaleAlerts.size(); i++) {
+                WhaleAlertResponse alert = whaleAlerts.get(i);
+                response.append(String.format("%d. %s %s\n", 
+                    i + 1, 
+                    alert.getAmount() != null ? alert.getAmount() : "N/A",
+                    alert.getDescription() != null ? alert.getDescription() : "N/A"));
+                response.append(String.format("   Giá trị: %s\n", 
+                    alert.getValue() != null ? alert.getValue() : "N/A"));
+                response.append(String.format("   Thời gian: %s\n", 
+                    alert.getTimestamp() != null ? alert.getTimestamp() : "N/A"));
+                if (alert.getUrl() != null && !alert.getUrl().isEmpty()) {
+                    response.append(String.format("   Link: %s\n", alert.getUrl()));
+                }
+                response.append("\n");
+            }
+            
+            return buildResponse(response.toString());
+        } catch (Exception e) {
+            log.error("Error fetching whale alerts for chat {}", chatId, e);
+            return buildResponse("Lỗi khi lấy dữ liệu whale alert. Vui lòng thử lại sau.");
         }
     }
 }
