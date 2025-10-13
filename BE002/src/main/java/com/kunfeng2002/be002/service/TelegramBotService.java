@@ -47,6 +47,7 @@ public class TelegramBotService {
     private final OnlineSearchService onlineSearchService;
     private final BinanceApiService binanceApiService;
     private final WhaleAlertService whaleAlertService;
+    private final WhaleAlertFormatterService whaleAlertFormatterService;
 
     @Transactional
     public void startBot(Long telegramUserId, Long chatId, String chatType, String title) {
@@ -314,7 +315,7 @@ public class TelegramBotService {
                 return handleNewCoinsCommand(chatId);
 
             case "/whale":
-                return handleWhaleCommand(chatId);
+                return handleWhaleCommand(chatId, argument);
 
             default:
                 return buildResponse("Unknown command.\nType /help to see available commands.");
@@ -346,7 +347,7 @@ public class TelegramBotService {
                 /addtoken <symbol> <amount> <price> - Add token to portfolio
                 /myportfolios - List your portfolios
                 /newcoins - Show 20 newest coins on Binance
-                /whale - Show whale alerts (large transactions)
+                /whale [n] - Show whale alerts (large transactions). Default: 3, Max: 10
                 """;
     }
 
@@ -596,34 +597,26 @@ public class TelegramBotService {
         }
     }
 
-    private ChatMessageResponse handleWhaleCommand(Long chatId) {
+    private ChatMessageResponse handleWhaleCommand(Long chatId, String argument) {
         try {
-            List<WhaleAlertResponse> whaleAlerts = whaleAlertService.getWhaleAlerts();
-            
-            if (whaleAlerts.isEmpty()) {
-                return buildResponse("Không có dữ liệu whale alert tại thời điểm này. Vui lòng thử lại sau.");
-            }
-
-            StringBuilder response = new StringBuilder();
-            response.append("Whale Alert - Giao dịch lớn\n\n");
-            
-            for (int i = 0; i < whaleAlerts.size(); i++) {
-                WhaleAlertResponse alert = whaleAlerts.get(i);
-                response.append(String.format("%d. %s %s\n", 
-                    i + 1, 
-                    alert.getAmount() != null ? alert.getAmount() : "N/A",
-                    alert.getDescription() != null ? alert.getDescription() : "N/A"));
-                response.append(String.format("   Giá trị: %s\n", 
-                    alert.getValue() != null ? alert.getValue() : "N/A"));
-                response.append(String.format("   Thời gian: %s\n", 
-                    alert.getTimestamp() != null ? alert.getTimestamp() : "N/A"));
-                if (alert.getUrl() != null && !alert.getUrl().isEmpty()) {
-                    response.append(String.format("   Link: %s\n", alert.getUrl()));
+            int count = 3;
+            if (argument != null && !argument.trim().isEmpty()) {
+                try {
+                    count = Integer.parseInt(argument.trim());
+                    if (count <= 0) {
+                        count = 3;
+                    } else if (count > 10) {
+                        count = 10;
+                    }
+                } catch (NumberFormatException e) {
+                    count = 3;
                 }
-                response.append("\n");
             }
             
-            return buildResponse(response.toString());
+            List<WhaleAlertResponse> whaleAlerts = whaleAlertService.getWhaleAlerts(count);
+            String formattedResponse = whaleAlertFormatterService.formatWhaleAlerts(whaleAlerts);
+            
+            return buildResponse(formattedResponse);
         } catch (Exception e) {
             log.error("Error fetching whale alerts for chat {}", chatId, e);
             return buildResponse("Lỗi khi lấy dữ liệu whale alert. Vui lòng thử lại sau.");
